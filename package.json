@@ -1,0 +1,23 @@
+{
+  "name": "remind-me",
+  "version": "1.0.0",
+  "description": "bot to remind you of Salah",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "start:tg": "ts-node src/ui/telegram/index.ts --watch"
+  },
+  "author": "AbdulQader Qassab",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.5",
+    "fast-glob": "^3.3.2",
+    "telegraf": "^4.15.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "ts-dotenv": "^0.9.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

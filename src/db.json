@@ -1,0 +1,11 @@
+{
+    "user_id": {
+        "username": "asd",
+        "isActive": true,
+        "displayName" :"ASd",
+        "preferences" :{
+            "language": "ar",
+            "isSubscribed": true
+        }
+    }
+}
