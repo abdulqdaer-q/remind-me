@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "start:tg": "ts-node src/ui/telegram/index.ts --watch"
+    "dev": "ts-node src/index.ts --watch",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
   },
   "author": "AbdulQader Qassab",
   "license": "ISC",
