@@ -1,11 +1,20 @@
 {
-    "user_id": {
-        "username": "asd",
-        "isActive": true,
-        "displayName" :"ASd",
-        "preferences" :{
-            "language": "ar",
-            "isSubscribed": true
-        }
+  "132619646": {
+    "username": "AbdulQader_Q",
+    "displayName": "Abdulقَader",
+    "isActive": true,
+    "preferences": {
+      "language": "en",
+      "isSubscribed": false
+    },
+    "location": {
+      "latitude": 25.328897,
+      "longitude": 55.371161
+    },
+    "functionalities": {
+      "reminder": false,
+      "tracker": false,
+      "remindByCall": false
     }
+  }
 }

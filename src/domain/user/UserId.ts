@@ -12,8 +12,8 @@ export class UserId {
   }
 
   private validate(): void {
-    if (!Number.isInteger(this._value) || this._value <= 0) {
-      throw new Error('User ID must be a positive integer');
+    if (!Number.isInteger(this._value)) {
+      throw new Error('User ID must be an integer');
     }
   }
 
