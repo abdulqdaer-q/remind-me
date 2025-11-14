@@ -54,7 +54,8 @@ class Container {
   private readonly timingsHandler = new TimingsHandler(
     this.getPrayerTimesUseCase,
     this.registerUserUseCase,
-    this.prayerTimesFormatter
+    this.prayerTimesFormatter,
+    settings.WEB_APP_URL
   );
 
   private readonly subscribeHandler = new SubscribeHandler(

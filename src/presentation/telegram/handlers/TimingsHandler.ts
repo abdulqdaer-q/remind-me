@@ -9,13 +9,11 @@ import { Language } from '../../../domain/shared/Language';
  * Handles the /timings command to show prayer times
  */
 export class TimingsHandler {
-  // TODO: Make this configurable via environment variable
-  private readonly WEB_APP_URL = 'https://cdpn.io/pen/debug/QWoNepM';
-
   constructor(
     private readonly getPrayerTimesUseCase: GetPrayerTimesUseCase,
     private readonly registerUserUseCase: RegisterUserUseCase,
-    private readonly formatter: PrayerTimesFormatter
+    private readonly formatter: PrayerTimesFormatter,
+    private readonly webAppUrl: string
   ) {}
 
   async handle(ctx: Context): Promise<void> {
@@ -43,7 +41,7 @@ export class TimingsHandler {
 
     // Generate mini app URL with user's location and language
     const miniAppUrl = this.formatter.generateMiniAppUrl(
-      this.WEB_APP_URL,
+      this.webAppUrl,
       user.location!.latitude,
       user.location!.longitude,
       user.language
