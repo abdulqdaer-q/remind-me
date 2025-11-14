@@ -5,6 +5,7 @@ import { User } from '../../domain/user/User';
 import { UserId } from '../../domain/user/UserId';
 import { Language } from '../../domain/shared/Language';
 import { Location } from '../../domain/location/Location';
+import { Functionalities } from '../../domain/user/Functionalities';
 
 interface UserData {
   username: string | null;
@@ -17,6 +18,11 @@ interface UserData {
   location?: {
     latitude: number;
     longitude: number;
+  };
+  functionalities?: {
+    reminder: boolean;
+    tracker: boolean;
+    remindByCall: boolean;
   };
 }
 
@@ -80,6 +86,13 @@ export class JsonUserRepository implements UserRepository {
         const location = userData.location
           ? Location.create(userData.location.latitude, userData.location.longitude)
           : null;
+        const functionalities = userData.functionalities
+          ? Functionalities.create(
+              userData.functionalities.reminder,
+              userData.functionalities.tracker,
+              userData.functionalities.remindByCall
+            )
+          : Functionalities.none();
 
         const user = User.reconstitute(
           userId,
@@ -87,6 +100,7 @@ export class JsonUserRepository implements UserRepository {
           userData.displayName,
           language,
           location,
+          functionalities,
           userData.preferences.isSubscribed,
           userData.isActive
         );
@@ -122,6 +136,7 @@ export class JsonUserRepository implements UserRepository {
               longitude: user.location.longitude,
             }
           : undefined,
+        functionalities: user.functionalities.toJSON(),
       };
     }
 

@@ -1,6 +1,7 @@
 import { UserId } from './UserId';
 import { Language } from '../shared/Language';
 import { Location } from '../location/Location';
+import { Functionalities } from './Functionalities';
 
 /**
  * User Entity
@@ -13,6 +14,7 @@ export class User {
     private _displayName: string,
     private _language: Language,
     private _location: Location | null,
+    private _functionalities: Functionalities,
     private _isSubscribed: boolean,
     private _isActive: boolean
   ) {}
@@ -30,6 +32,7 @@ export class User {
       displayName,
       language || Language.default(),
       location || null,
+      Functionalities.none(),
       false,
       true
     );
@@ -41,6 +44,7 @@ export class User {
     displayName: string,
     language: Language,
     location: Location | null,
+    functionalities: Functionalities,
     isSubscribed: boolean,
     isActive: boolean
   ): User {
@@ -50,6 +54,7 @@ export class User {
       displayName,
       language,
       location,
+      functionalities,
       isSubscribed,
       isActive
     );
@@ -76,6 +81,10 @@ export class User {
     return this._location;
   }
 
+  get functionalities(): Functionalities {
+    return this._functionalities;
+  }
+
   get isSubscribed(): boolean {
     return this._isSubscribed;
   }
@@ -96,6 +105,52 @@ export class User {
 
   updateLocation(location: Location): void {
     this._location = location;
+  }
+
+  updateFunctionalities(functionalities: Functionalities): void {
+    this._functionalities = functionalities;
+  }
+
+  enableFunctionality(type: 'reminder' | 'tracker' | 'remindByCall'): void {
+    switch (type) {
+      case 'reminder':
+        this._functionalities = this._functionalities.withReminder(true);
+        break;
+      case 'tracker':
+        this._functionalities = this._functionalities.withTracker(true);
+        break;
+      case 'remindByCall':
+        this._functionalities = this._functionalities.withRemindByCall(true);
+        break;
+    }
+  }
+
+  disableFunctionality(type: 'reminder' | 'tracker' | 'remindByCall'): void {
+    switch (type) {
+      case 'reminder':
+        this._functionalities = this._functionalities.withReminder(false);
+        break;
+      case 'tracker':
+        this._functionalities = this._functionalities.withTracker(false);
+        break;
+      case 'remindByCall':
+        this._functionalities = this._functionalities.withRemindByCall(false);
+        break;
+    }
+  }
+
+  toggleFunctionality(type: 'reminder' | 'tracker' | 'remindByCall'): void {
+    switch (type) {
+      case 'reminder':
+        this._functionalities = this._functionalities.withReminder(!this._functionalities.reminder);
+        break;
+      case 'tracker':
+        this._functionalities = this._functionalities.withTracker(!this._functionalities.tracker);
+        break;
+      case 'remindByCall':
+        this._functionalities = this._functionalities.withRemindByCall(!this._functionalities.remindByCall);
+        break;
+    }
   }
 
   subscribe(): void {

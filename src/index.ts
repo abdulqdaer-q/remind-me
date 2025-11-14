@@ -9,6 +9,7 @@ import { JsonUserRepository } from './infrastructure/persistence/JsonUserReposit
 import { AladhanPrayerTimesService } from './infrastructure/api/AladhanPrayerTimesService';
 import { TranslationService } from './infrastructure/i18n/TranslationService';
 import { TelegramBot } from './infrastructure/telegram/TelegramBot';
+import { SessionManager } from './infrastructure/telegram/Session';
 
 // Application
 import { RegisterUserUseCase } from './application/user/RegisterUserUseCase';
@@ -20,6 +21,7 @@ import { GetPrayerTimesUseCase } from './application/prayer/GetPrayerTimesUseCas
 import { TimingsHandler } from './presentation/telegram/handlers/TimingsHandler';
 import { SubscribeHandler } from './presentation/telegram/handlers/SubscribeHandler';
 import { LocationHandler } from './presentation/telegram/handlers/LocationHandler';
+import { StartHandler } from './presentation/telegram/handlers/StartHandler';
 import { PrayerTimesFormatter } from './presentation/telegram/formatters/PrayerTimesFormatter';
 
 // Dependency Injection Container
@@ -28,6 +30,7 @@ class Container {
   private readonly userRepository = new JsonUserRepository();
   private readonly prayerTimesService = new AladhanPrayerTimesService();
   private readonly translationService = new TranslationService();
+  private readonly sessionManager = new SessionManager();
 
   // Application
   private readonly registerUserUseCase = new RegisterUserUseCase(
@@ -59,6 +62,13 @@ class Container {
     this.translationService
   );
 
+  private readonly startHandler = new StartHandler(
+    this.registerUserUseCase,
+    this.updateUserLocationUseCase,
+    this.translationService,
+    this.sessionManager
+  );
+
   private readonly locationHandler = new LocationHandler(
     this.registerUserUseCase,
     this.updateUserLocationUseCase,
@@ -70,14 +80,17 @@ class Container {
   getTelegramBot(): TelegramBot {
     return new TelegramBot(
       settings.BOT_TOKEN,
+      this.sessionManager,
       this.timingsHandler,
       this.subscribeHandler,
+      this.startHandler,
       this.locationHandler
     );
   }
 }
 
 // Bootstrap
+console.log('> Bilal bot is starting...');
 const container = new Container();
 const bot = container.getTelegramBot();
 bot.launch();
