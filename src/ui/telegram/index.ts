@@ -2,8 +2,11 @@ import FastGlob from "fast-glob";
 import path from "path";
 import { Telegraf } from "telegraf";
 import { settings } from "../../core/settings";
+import { sessionMiddleware, BotContext } from "./session";
+
 const startBot = () => {
-  const bot = new Telegraf(settings.BOT_TOKEN);
+  const bot = new Telegraf<BotContext>(settings.BOT_TOKEN);
+  bot.use(sessionMiddleware);
   return bot;
 };
 
