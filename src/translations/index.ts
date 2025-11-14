@@ -10,6 +10,20 @@ export interface Translations {
     'asr': string
     'maghrib': string
     'isha': string
+    // Start command flow translations
+    'start-welcome': string
+    'choose-language': string
+    'language-selected': string
+    'request-location': string
+    'location-saved': string
+    'choose-functionalities': string
+    'functionality-reminder': string
+    'functionality-tracker': string
+    'functionality-remind-by-call': string
+    'setup-complete': string
+    'setup-complete-with-selections': string
+    'button-send-location': string
+    'button-skip': string
 }
 export const translate = async (key: keyof Translations, lang: string = 'en') => {
     
