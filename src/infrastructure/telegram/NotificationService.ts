@@ -20,15 +20,16 @@ export class NotificationService {
   }
 
   /**
-   * Send a message with audio (for azan)
+   * Broadcast voice message (for azan in groups)
+   * Sends as a voice message (circular audio) instead of regular audio file
    */
-  async sendAudio(userId: number, audioUrl: string, caption?: string): Promise<void> {
+  async broadcastVoice(chatId: number, voiceUrl: string, caption?: string): Promise<void> {
     try {
-      await this.bot.telegram.sendAudio(userId, audioUrl, {
+      await this.bot.telegram.sendVoice(chatId, voiceUrl, {
         caption,
       });
     } catch (error) {
-      console.error(`Failed to send audio to user ${userId}:`, error);
+      console.error(`Failed to broadcast voice to chat ${chatId}:`, error);
     }
   }
 
