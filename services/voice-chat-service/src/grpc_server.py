@@ -107,6 +107,63 @@ class VoiceChatServicer(voice_chat_pb2_grpc.VoiceChatServiceServicer):
                 message=f"Error: {str(e)}"
             )
 
+    async def StartCall(self, request, context):
+        """Start a 1-on-1 call with a user."""
+        try:
+            logger.info(f"Received StartCall request for user {request.user_id}")
+
+            success, call_id = await self.voice_chat_manager.start_call(
+                request.user_id,
+                request.audio_url,
+                request.duration_seconds if request.duration_seconds > 0 else 180
+            )
+
+            if success:
+                return voice_chat_pb2.StartCallResponse(
+                    success=True,
+                    message="Successfully started call",
+                    call_id=call_id
+                )
+            else:
+                return voice_chat_pb2.StartCallResponse(
+                    success=False,
+                    message="Failed to start call",
+                    call_id=""
+                )
+
+        except Exception as e:
+            logger.error(f"Error in StartCall: {e}")
+            return voice_chat_pb2.StartCallResponse(
+                success=False,
+                message=f"Error: {str(e)}",
+                call_id=""
+            )
+
+    async def EndCall(self, request, context):
+        """End an active 1-on-1 call."""
+        try:
+            logger.info(f"Received EndCall request for call {request.call_id}")
+
+            success = await self.voice_chat_manager.end_call(request.call_id)
+
+            if success:
+                return voice_chat_pb2.EndCallResponse(
+                    success=True,
+                    message="Successfully ended call"
+                )
+            else:
+                return voice_chat_pb2.EndCallResponse(
+                    success=False,
+                    message="Failed to end call"
+                )
+
+        except Exception as e:
+            logger.error(f"Error in EndCall: {e}")
+            return voice_chat_pb2.EndCallResponse(
+                success=False,
+                message=f"Error: {str(e)}"
+            )
+
     async def HealthCheck(self, request, context):
         """Health check endpoint."""
         return voice_chat_pb2.HealthCheckResponse(healthy=True)

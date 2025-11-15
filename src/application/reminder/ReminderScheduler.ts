@@ -88,7 +88,8 @@ export class ReminderScheduler {
               await this.sendPrayerTimeReminder(
                 user.id.value,
                 prayer.name,
-                user.language.code
+                user.language.code,
+                user
               );
             }
 
@@ -159,7 +160,8 @@ export class ReminderScheduler {
   private async sendPrayerTimeReminder(
     userId: number,
     prayer: PrayerName,
-    languageCode: string
+    languageCode: string,
+    user?: any
   ): Promise<void> {
     try {
       let message: string;
@@ -169,11 +171,13 @@ export class ReminderScheduler {
         message = `🕌 It's time for ${prayer} prayer!\n\nMay Allah accept your prayer.`;
       }
 
-      await this.notificationService.sendMessage(userId, message);
-
       // Check if it's a group and broadcast azan
       const isGroup = await this.notificationService.isGroup(userId);
+
       if (isGroup) {
+        // Send text message first
+        await this.notificationService.sendMessage(userId, message);
+
         // Broadcast azan in groups (voice chat streaming or voice message)
         const azanUrl = 'https://cdn.aladhan.com/audio/adhans/a1.mp3';
         const method = await this.notificationService.broadcastAzan(
@@ -182,6 +186,27 @@ export class ReminderScheduler {
           `🕌 ${prayer} Azan`
         );
         console.log(`📢 Broadcasted azan for ${prayer} via ${method} in group ${userId}`);
+      } else {
+        // For private chats, check if user wants call reminders
+        const remindByCall = user?.functionalities?.remindByCall || false;
+
+        if (remindByCall) {
+          // Make a voice call with azan
+          console.log(`📞 Making call reminder for ${prayer} to user ${userId}`);
+          const azanUrl = 'https://cdn.aladhan.com/audio/adhans/a1.mp3';
+          const callId = await this.notificationService.callUser(userId, azanUrl, 180);
+
+          if (callId) {
+            console.log(`✅ Initiated call reminder for ${prayer} to user ${userId} (Call ID: ${callId})`);
+          } else {
+            // Fallback to text message if call fails
+            console.warn(`⚠️  Call failed for user ${userId}, sending text message instead`);
+            await this.notificationService.sendMessage(userId, message);
+          }
+        } else {
+          // Regular text message
+          await this.notificationService.sendMessage(userId, message);
+        }
       }
 
       console.log(`✅ Sent prayer time reminder for ${prayer} to user ${userId}`);
