@@ -1,16 +1,18 @@
 version: '3.8'
 
 services:
-  # Translation Service Microservice
+  # Translation Service Microservice (Dual Protocol: gRPC + REST)
   translation-service:
     build:
       context: ./services/translation-service
       dockerfile: Dockerfile
     container_name: translation-service
     ports:
-      - "3001:3001"
+      - "3001:3001"  # REST API
+      - "50051:50051"  # gRPC
     environment:
-      - PORT=3001
+      - REST_PORT=3001
+      - GRPC_PORT=50051
     networks:
       - remind-me-network
     restart: unless-stopped
@@ -21,16 +23,18 @@ services:
       retries: 3
       start_period: 40s
 
-  # Prayer Times Service Microservice
+  # Prayer Times Service Microservice (Dual Protocol: gRPC + REST)
   prayer-times-service:
     build:
       context: ./services/prayer-times-service
       dockerfile: Dockerfile
     container_name: prayer-times-service
     ports:
-      - "3002:3002"
+      - "3002:3002"  # REST API
+      - "50052:50052"  # gRPC
     environment:
-      - PORT=3002
+      - REST_PORT=3002
+      - GRPC_PORT=50052
     networks:
       - remind-me-network
     restart: unless-stopped
@@ -50,8 +54,8 @@ services:
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
       - WEB_APP_URL=${WEB_APP_URL:-http://localhost:8080}
-      - TRANSLATION_SERVICE_URL=http://translation-service:3001
-      - PRAYER_TIMES_SERVICE_URL=http://prayer-times-service:3002
+      - TRANSLATION_SERVICE_URL=translation-service:50051
+      - PRAYER_TIMES_SERVICE_URL=prayer-times-service:50052
     depends_on:
       - translation-service
       - prayer-times-service

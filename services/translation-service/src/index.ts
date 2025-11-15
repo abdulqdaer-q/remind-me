@@ -1,105 +1,140 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import * as path from 'path';
 import { getTranslation, getTranslations, getAllTranslations, Language, Translations } from './translations';
+import { createRestServer } from './rest-server';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+const GRPC_PORT = process.env.GRPC_PORT || 50051;
+const REST_PORT = process.env.REST_PORT || 3001;
+const PROTO_PATH = path.join(__dirname, '../../../proto/translation.proto');
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'healthy', service: 'translation-service' });
+// Load proto file
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
 });
 
-// Get single translation
-// GET /translate/:language/:key
-app.get('/translate/:language/:key', (req: Request, res: Response) => {
-  const { language, key } = req.params;
+const translationProto = grpc.loadPackageDefinition(packageDefinition).translation as any;
 
-  if (language !== 'en' && language !== 'ar') {
-    return res.status(400).json({
-      error: 'Invalid language. Supported languages: en, ar'
+// Implement gRPC service methods
+const translationService = {
+  // Get single translation
+  GetTranslation: (call: any, callback: any) => {
+    const { language, key } = call.request;
+
+    if (language !== 'en' && language !== 'ar') {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid language. Supported languages: en, ar'
+      });
+    }
+
+    try {
+      const translation = getTranslation(key as keyof Translations, language as Language);
+      callback(null, {
+        key,
+        language,
+        translation
+      });
+    } catch (error) {
+      callback({
+        code: grpc.status.INTERNAL,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  },
+
+  // Get multiple translations
+  GetTranslations: (call: any, callback: any) => {
+    const { language, keys } = call.request;
+
+    if (language !== 'en' && language !== 'ar') {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid language. Supported languages: en, ar'
+      });
+    }
+
+    if (!Array.isArray(keys)) {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid request. Expected keys array'
+      });
+    }
+
+    try {
+      const translations = getTranslations(keys as (keyof Translations)[], language as Language);
+      callback(null, {
+        language,
+        translations
+      });
+    } catch (error) {
+      callback({
+        code: grpc.status.INTERNAL,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  },
+
+  // Get all translations
+  GetAllTranslations: (call: any, callback: any) => {
+    const { language } = call.request;
+
+    if (language !== 'en' && language !== 'ar') {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid language. Supported languages: en, ar'
+      });
+    }
+
+    try {
+      const translations = getAllTranslations(language as Language);
+      callback(null, {
+        language,
+        translations
+      });
+    } catch (error) {
+      callback({
+        code: grpc.status.INTERNAL,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  },
+
+  // Health check
+  HealthCheck: (call: any, callback: any) => {
+    callback(null, {
+      status: 'healthy',
+      service: 'translation-service'
     });
   }
+};
 
-  try {
-    const translation = getTranslation(key as keyof Translations, language as Language);
-    res.json({
-      key,
-      language,
-      translation
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Translation error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
+// Create and start gRPC server
+function startGrpcServer() {
+  const server = new grpc.Server();
 
-// Get multiple translations
-// POST /translate/:language
-// Body: { keys: string[] }
-app.post('/translate/:language', (req: Request, res: Response) => {
-  const { language } = req.params;
-  const { keys } = req.body;
+  server.addService(translationProto.TranslationService.service, translationService);
 
-  if (language !== 'en' && language !== 'ar') {
-    return res.status(400).json({
-      error: 'Invalid language. Supported languages: en, ar'
-    });
-  }
+  server.bindAsync(
+    `0.0.0.0:${GRPC_PORT}`,
+    grpc.ServerCredentials.createInsecure(),
+    (error, port) => {
+      if (error) {
+        console.error('Failed to start gRPC server:', error);
+        process.exit(1);
+      }
+      console.log(`Translation Service (gRPC) running on port ${port}`);
+      console.log(`Protocol: gRPC`);
+      console.log(`Proto file: ${PROTO_PATH}`);
+    }
+  );
+}
 
-  if (!Array.isArray(keys)) {
-    return res.status(400).json({
-      error: 'Invalid request. Expected { keys: string[] }'
-    });
-  }
-
-  try {
-    const translations = getTranslations(keys as (keyof Translations)[], language as Language);
-    res.json({
-      language,
-      translations
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Translation error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Get all translations for a language
-// GET /translate/:language
-app.get('/translate/:language', (req: Request, res: Response) => {
-  const { language } = req.params;
-
-  if (language !== 'en' && language !== 'ar') {
-    return res.status(400).json({
-      error: 'Invalid language. Supported languages: en, ar'
-    });
-  }
-
-  try {
-    const translations = getAllTranslations(language as Language);
-    res.json({
-      language,
-      translations
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Translation error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Translation Service running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+// Start both servers
+console.log('Starting Translation Service with dual protocol support...');
+startGrpcServer();
+createRestServer(Number(REST_PORT));

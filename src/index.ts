@@ -6,8 +6,8 @@
 // Infrastructure
 import { settings } from './infrastructure/config/Settings';
 import { JsonUserRepository } from './infrastructure/persistence/JsonUserRepository';
-import { HttpPrayerTimesService } from './infrastructure/api/HttpPrayerTimesService';
-import { HttpTranslationService } from './infrastructure/i18n/HttpTranslationService';
+import { GrpcPrayerTimesService } from './infrastructure/api/GrpcPrayerTimesService';
+import { GrpcTranslationService } from './infrastructure/i18n/GrpcTranslationService';
 import { TelegramBot } from './infrastructure/telegram/TelegramBot';
 import { SessionManager } from './infrastructure/telegram/Session';
 
@@ -28,8 +28,8 @@ import { PrayerTimesFormatter } from './presentation/telegram/formatters/PrayerT
 class Container {
   // Infrastructure
   private readonly userRepository = new JsonUserRepository();
-  private readonly prayerTimesService = new HttpPrayerTimesService();
-  private readonly translationService = new HttpTranslationService();
+  private readonly prayerTimesService = new GrpcPrayerTimesService();
+  private readonly translationService = new GrpcTranslationService();
   private readonly sessionManager = new SessionManager();
 
   // Application

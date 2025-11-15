@@ -3,7 +3,7 @@ import { message } from 'telegraf/filters';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
 import { UpdateUserLocationUseCase } from '../../../application/user/UpdateUserLocationUseCase';
 import { SubscribeUserUseCase } from '../../../application/user/SubscribeUserUseCase';
-import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
+import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 
 /**
  * Location Event Handler
@@ -14,7 +14,7 @@ export class LocationHandler {
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly updateUserLocationUseCase: UpdateUserLocationUseCase,
     private readonly subscribeUserUseCase: SubscribeUserUseCase,
-    private readonly translationService: HttpTranslationService
+    private readonly translationService: GrpcTranslationService
   ) {}
 
   async handle(ctx: Context): Promise<void> {

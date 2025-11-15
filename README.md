@@ -1,22 +1,25 @@
 # Remind Me (Bilal) - Prayer Times Bot
 
-A Telegram bot application built with microservices architecture to help Muslims track prayer times and receive reminders.
+A Telegram bot application built with **microservices architecture** and **gRPC** to help Muslims track prayer times and receive reminders.
 
 ## 🏗️ Architecture
 
-This application uses a **microservices architecture** with the following independent services:
+This application uses a **hybrid microservices architecture** with dual protocol support:
+
+- **gRPC** for high-performance service-to-service communication (bot ↔ microservices)
+- **REST** for browser compatibility (web app ↔ microservices)
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌───────────────────┐
-│  Telegram   │────▶│  Translation     │     │  Prayer Times     │
-│     Bot     │     │   Service        │     │    Service        │
-│             │     │   (Port 3001)    │     │   (Port 3002)     │
-└─────────────┘     └──────────────────┘     └───────────────────┘
-       │                     ▲                         ▲
-       │                     │                         │
-       ▼                     │                         │
-┌─────────────┐             │                         │
-│   Web App   │─────────────┴─────────────────────────┘
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
+│  Telegram   │ gRPC│  Translation Service │     │ Prayer Times Service│
+│     Bot     │────▶│  gRPC: 50051         │     │  gRPC: 50052        │
+│             │     │  REST: 3001          │     │  REST: 3002         │
+└─────────────┘     └──────────────────────┘     └─────────────────────┘
+       │                     ▲                           ▲
+       │                     │ REST                      │ REST
+       ▼                     │                           │
+┌─────────────┐             │                           │
+│   Web App   │─────────────┴───────────────────────────┘
 │ (Port 8080) │
 └─────────────┘
 ```
@@ -24,11 +27,19 @@ This application uses a **microservices architecture** with the following indepe
 ### Services
 
 1. **Translation Service** - Centralized i18n management (English & Arabic)
+   - gRPC port: `50051` (bot communication)
+   - REST port: `3001` (web app communication)
 2. **Prayer Times Service** - Fetches prayer times from Aladhan API
+   - gRPC port: `50052` (bot communication)
+   - REST port: `3002` (web app communication)
 3. **Telegram Bot** - Main application handling user interactions
+   - Uses gRPC clients for fast, type-safe communication
 4. **Web App** - Vite-based frontend for displaying prayer times
+   - Uses REST APIs for browser compatibility
 
-For detailed architecture documentation, see [MICROSERVICES_ARCHITECTURE.md](./MICROSERVICES_ARCHITECTURE.md)
+For detailed architecture documentation, see:
+- [MICROSERVICES_ARCHITECTURE.md](./MICROSERVICES_ARCHITECTURE.md) - Microservices design
+- [GRPC_ARCHITECTURE.md](./GRPC_ARCHITECTURE.md) - gRPC implementation details
 
 ## ✨ Features
 
@@ -209,10 +220,18 @@ remind-me/
 - **Language**: TypeScript
 - **Runtime**: Node.js 20
 - **Bot Framework**: Telegraf
-- **Web Framework**: Express.js (microservices), Vite (frontend)
+- **RPC Framework**: gRPC (@grpc/grpc-js, Protocol Buffers)
+- **Web Framework**: Express.js (REST APIs), Vite (frontend)
 - **HTTP Client**: Axios
 - **Containerization**: Docker & Docker Compose
 - **External API**: Aladhan Prayer Times API
+
+### Why gRPC?
+
+- **Performance**: Binary protocol (Protocol Buffers) is faster than JSON
+- **Type Safety**: Strong typing with `.proto` definitions
+- **Smaller Payloads**: ~30% size reduction compared to JSON
+- **Future-proof**: Supports streaming for real-time features
 
 ## 📊 Microservices API
 

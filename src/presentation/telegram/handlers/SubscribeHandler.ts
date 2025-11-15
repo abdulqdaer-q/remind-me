@@ -1,6 +1,6 @@
 import { Context, Markup } from 'telegraf';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
-import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
+import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 
 /**
  * Subscribe Command Handler
@@ -9,7 +9,7 @@ import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTransla
 export class SubscribeHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
-    private readonly translationService: HttpTranslationService
+    private readonly translationService: GrpcTranslationService
   ) {}
 
   async handle(ctx: Context): Promise<void> {

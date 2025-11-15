@@ -2,7 +2,7 @@ import { Markup } from 'telegraf';
 import { BotContext, SessionManager } from '../../../infrastructure/telegram/Session';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
 import { UpdateUserLocationUseCase } from '../../../application/user/UpdateUserLocationUseCase';
-import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
+import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 import { Language } from '../../../domain/shared/Language';
 import { User } from '../../../domain/user/User';
 
@@ -14,7 +14,7 @@ export class StartHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly updateUserLocationUseCase: UpdateUserLocationUseCase,
-    private readonly translationService: HttpTranslationService,
+    private readonly translationService: GrpcTranslationService,
     private readonly sessionManager: SessionManager
   ) {}
 

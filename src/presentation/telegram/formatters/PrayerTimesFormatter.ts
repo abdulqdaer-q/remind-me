@@ -1,13 +1,13 @@
 import { PrayerTimes } from '../../../domain/prayer/PrayerTimes';
 import { Language } from '../../../domain/shared/Language';
-import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
+import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 
 /**
  * Prayer Times Formatter
  * Formats prayer times for display in Telegram
  */
 export class PrayerTimesFormatter {
-  constructor(private readonly translationService: HttpTranslationService) {}
+  constructor(private readonly translationService: GrpcTranslationService) {}
 
   async formatForMessage(prayerTimes: PrayerTimes, language: Language): Promise<string> {
     const title = await this.translationService.translate('prayer-times-title', language);

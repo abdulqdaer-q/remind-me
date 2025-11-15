@@ -1,77 +1,112 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import * as path from 'path';
 import { AladhanClient } from './aladhan-client';
+import { createRestServer } from './rest-server';
 
-const app = express();
-const PORT = process.env.PORT || 3002;
-const aladhanClient = new AladhanClient();
+const GRPC_PORT = process.env.GRPC_PORT || 50052;
+const REST_PORT = process.env.REST_PORT || 3002;
+const PROTO_PATH = path.join(__dirname, '../../../proto/prayer-times.proto');
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'healthy', service: 'prayer-times-service' });
+// Load proto file
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
 });
 
-// Get prayer times
-// GET /prayer-times?lat=33.5138&lng=36.2765&date=2024-01-15
-app.get('/prayer-times', async (req: Request, res: Response) => {
-  try {
-    const { lat, lng, date } = req.query;
+const prayerTimesProto = grpc.loadPackageDefinition(packageDefinition).prayertimes as any;
+
+// Create Aladhan client
+const aladhanClient = new AladhanClient();
+
+// Implement gRPC service methods
+const prayerTimesService = {
+  // Get prayer times
+  GetPrayerTimes: async (call: any, callback: any) => {
+    const { latitude, longitude, date } = call.request;
 
     // Validate latitude
-    if (!lat || typeof lat !== 'string') {
-      return res.status(400).json({
-        error: 'Missing or invalid latitude parameter'
+    if (latitude < -90 || latitude > 90) {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid latitude. Must be between -90 and 90'
       });
     }
 
     // Validate longitude
-    if (!lng || typeof lng !== 'string') {
-      return res.status(400).json({
-        error: 'Missing or invalid longitude parameter'
-      });
-    }
-
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lng);
-
-    // Validate coordinate ranges
-    if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-      return res.status(400).json({
-        error: 'Invalid latitude. Must be between -90 and 90'
-      });
-    }
-
-    if (isNaN(longitude) || longitude < -180 || longitude > 180) {
-      return res.status(400).json({
-        error: 'Invalid longitude. Must be between -180 and 180'
+    if (longitude < -180 || longitude > 180) {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid longitude. Must be between -180 and 180'
       });
     }
 
     // Validate date format if provided
-    const dateParam = date as string | undefined;
-    if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      return res.status(400).json({
-        error: 'Invalid date format. Use YYYY-MM-DD'
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        details: 'Invalid date format. Use YYYY-MM-DD'
       });
     }
 
-    const prayerTimes = await aladhanClient.getPrayerTimes(latitude, longitude, dateParam);
-    res.json(prayerTimes);
-  } catch (error) {
-    console.error('Error fetching prayer times:', error);
-    res.status(500).json({
-      error: 'Failed to fetch prayer times',
-      message: error instanceof Error ? error.message : 'Unknown error'
+    try {
+      const prayerTimes = await aladhanClient.getPrayerTimes(latitude, longitude, date || undefined);
+
+      callback(null, {
+        date: prayerTimes.date,
+        location: {
+          latitude: prayerTimes.location.latitude,
+          longitude: prayerTimes.location.longitude
+        },
+        prayers: prayerTimes.prayers.map(prayer => ({
+          name: prayer.name,
+          time: prayer.time,
+          time12h: prayer.time12h
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching prayer times:', error);
+      callback({
+        code: grpc.status.INTERNAL,
+        details: error instanceof Error ? error.message : 'Failed to fetch prayer times'
+      });
+    }
+  },
+
+  // Health check
+  HealthCheck: (call: any, callback: any) => {
+    callback(null, {
+      status: 'healthy',
+      service: 'prayer-times-service'
     });
   }
-});
+};
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Prayer Times Service running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+// Create and start gRPC server
+function startGrpcServer() {
+  const server = new grpc.Server();
+
+  server.addService(prayerTimesProto.PrayerTimesService.service, prayerTimesService);
+
+  server.bindAsync(
+    `0.0.0.0:${GRPC_PORT}`,
+    grpc.ServerCredentials.createInsecure(),
+    (error, port) => {
+      if (error) {
+        console.error('Failed to start gRPC server:', error);
+        process.exit(1);
+      }
+      console.log(`Prayer Times Service (gRPC) running on port ${port}`);
+      console.log(`Protocol: gRPC`);
+      console.log(`Proto file: ${PROTO_PATH}`);
+    }
+  );
+}
+
+// Start both servers
+console.log('Starting Prayer Times Service with dual protocol support...');
+startGrpcServer();
+createRestServer(Number(REST_PORT));
