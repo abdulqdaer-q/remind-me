@@ -3,19 +3,31 @@ import { GetPrayerTimesUseCase } from '../../../application/prayer/GetPrayerTime
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
 import { PrayerTimesFormatter } from '../formatters/PrayerTimesFormatter';
 import { Language } from '../../../domain/shared/Language';
+import { Handler, Command } from '../../../core/di/decorators';
+import { TOKENS } from '../../../core/di/tokens';
+import { BaseHandler } from '../../../core/handlers/BaseHandler';
 
 /**
  * Timings Command Handler
  * Handles the /timings command to show prayer times
  */
-export class TimingsHandler {
+@Handler(
+  TOKENS.GetPrayerTimesUseCase,
+  TOKENS.RegisterUserUseCase,
+  TOKENS.PrayerTimesFormatter,
+  TOKENS.WebAppUrl
+)
+export class TimingsHandler extends BaseHandler {
   constructor(
     private readonly getPrayerTimesUseCase: GetPrayerTimesUseCase,
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly formatter: PrayerTimesFormatter,
     private readonly webAppUrl: string
-  ) {}
+  ) {
+    super();
+  }
 
+  @Command('timings')
   async handle(ctx: Context): Promise<void> {
     if (!ctx.from) {
       await ctx.reply('Unable to identify user.');

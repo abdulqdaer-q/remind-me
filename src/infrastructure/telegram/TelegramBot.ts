@@ -1,32 +1,23 @@
 import { Telegraf } from 'telegraf';
 import { SessionManager, BotContext } from './Session';
-import { TimingsHandler } from '../../presentation/telegram/handlers/TimingsHandler';
-import { SubscribeHandler } from '../../presentation/telegram/handlers/SubscribeHandler';
-import { LocationHandler } from '../../presentation/telegram/handlers/LocationHandler';
-import { StartHandler } from '../../presentation/telegram/handlers/StartHandler';
-import { JsonUserRepository } from '../persistence/JsonUserRepository';
-import { RegisterUserUseCase } from '../../application/user/RegisterUserUseCase';
+import { HandlerRegistry } from '../../core/handlers/HandlerRegistry';
+import { Container } from '../../core/di/Container';
 
 /**
  * Telegram Bot Infrastructure
- * Initializes and configures the Telegram bot with handlers
+ * Initializes and configures the Telegram bot with handlers using DI
  */
 export class TelegramBot {
   private bot: Telegraf<BotContext>;
-  private userRepository: JsonUserRepository;
-  private registerUserUseCase: RegisterUserUseCase;
+  private handlerRegistry: HandlerRegistry;
 
   constructor(
     botToken: string,
     private readonly sessionManager: SessionManager,
-    private readonly timingsHandler: TimingsHandler,
-    private readonly subscribeHandler: SubscribeHandler,
-    private readonly startHandler: StartHandler,
-    private readonly locationHandler: LocationHandler
+    private readonly container: Container
   ) {
     this.bot = new Telegraf<BotContext>(botToken);
-    this.userRepository = new JsonUserRepository();
-    this.registerUserUseCase = new RegisterUserUseCase(this.userRepository);
+    this.handlerRegistry = new HandlerRegistry(this.bot, this.container);
     this.setupMiddleware();
     this.setupHandlers();
   }
@@ -37,52 +28,8 @@ export class TelegramBot {
   }
 
   private setupHandlers(): void {
-    // Command handlers
-    this.bot.command('start', (ctx) => this.startHandler.handleStart(ctx));
-    this.bot.command('timings', (ctx) => this.timingsHandler.handle(ctx));
-    this.bot.command('subscribe', (ctx) => this.subscribeHandler.handle(ctx));
-
-    // Callback query handlers (for inline buttons)
-    this.bot.action(/^lang_(.+)$/, (ctx) =>
-      this.startHandler.handleLanguageSelection(ctx)
-    );
-    this.bot.action(/^func_(.+)$/, async (ctx) => {
-      // Need to get user first
-      const userId = ctx.from?.id;
-      if (!userId) return;
-
-      const user = await this.registerUserUseCase.execute({
-        userId,
-        username: ctx.from?.username || null,
-        displayName: ctx.from?.first_name || 'User',
-      });
-
-      if (user) {
-        await this.startHandler.handleFunctionalitySelection(ctx, user);
-      }
-    });
-
-    // Event handlers
-    this.bot.on('location', async (ctx) => {
-      // Check if this is part of onboarding flow
-      if (ctx.session?.conversationState === 'AWAITING_LOCATION') {
-        const userId = ctx.from?.id;
-        if (!userId) return;
-
-        const user = await this.registerUserUseCase.execute({
-          userId,
-          username: ctx.from?.username || null,
-          displayName: ctx.from?.first_name || 'User',
-        });
-
-        if (user) {
-          await this.startHandler.handleLocationDuringOnboarding(ctx, user);
-        }
-      } else {
-        // Regular location handler (for /subscribe command)
-        await this.locationHandler.handle(ctx);
-      }
-    });
+    // Automatically register all decorated handlers
+    this.handlerRegistry.registerAll();
 
     // Error handling
     this.bot.catch((err, ctx) => {
