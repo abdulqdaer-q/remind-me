@@ -26,6 +26,10 @@ import { GetPrayerTimesUseCase } from './application/prayer/GetPrayerTimesUseCas
 // Presentation
 import { PrayerTimesFormatter } from './presentation/telegram/formatters/PrayerTimesFormatter';
 
+// Reminder System
+import { NotificationService } from './infrastructure/telegram/NotificationService';
+import { ReminderScheduler } from './application/reminder/ReminderScheduler';
+
 // Import handlers to ensure decorators are executed
 import './presentation/telegram/handlers/TimingsHandler';
 import './presentation/telegram/handlers/SubscribeHandler';
@@ -127,8 +131,43 @@ function bootstrap(): void {
     container
   );
 
+  // Register reminder services after bot is created
+  console.log('> Setting up reminder system...');
+  container.register(
+    TOKENS.NotificationService,
+    () => new NotificationService(bot.getBot()),
+    'singleton'
+  );
+
+  container.register(
+    TOKENS.ReminderScheduler,
+    (c) =>
+      new ReminderScheduler(
+        c.resolve(TOKENS.UserRepository),
+        c.resolve(TOKENS.PrayerTimesService),
+        c.resolve(TOKENS.TranslationService),
+        c.resolve(TOKENS.NotificationService)
+      ),
+    'singleton'
+  );
+
   console.log('> Launching bot...');
   bot.launch();
+
+  // Start the reminder scheduler
+  console.log('> Starting reminder scheduler...');
+  const scheduler = container.resolve(TOKENS.ReminderScheduler) as ReminderScheduler;
+  scheduler.start();
+
+  // Graceful shutdown for scheduler
+  const gracefulShutdown = (signal: string) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    scheduler.stop();
+    process.exit(0);
+  };
+
+  process.once('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
 }
 
 // Start the application

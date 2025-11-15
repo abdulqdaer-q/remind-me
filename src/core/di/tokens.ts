@@ -25,6 +25,10 @@ export const TOKENS = {
   // Formatters
   PrayerTimesFormatter: Symbol.for('PrayerTimesFormatter'),
 
+  // Reminder System
+  NotificationService: Symbol.for('NotificationService'),
+  ReminderScheduler: Symbol.for('ReminderScheduler'),
+
   // Configuration
   WebAppUrl: Symbol.for('WebAppUrl'),
   Settings: Symbol.for('Settings'),
