@@ -8,7 +8,7 @@
     "dev": "ts-node src/index.ts --watch",
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "webapp": "cd src/apps/salah-times && npm run dev",
+    "webapp": "cd webapp && npm run dev",
     "start:all": "concurrently \"npm run start\" \"npm run webapp\" --names \"bot,webapp\" --prefix-colors \"cyan,magenta\"",
     "services:translation": "cd services/translation-service && npm run dev",
     "services:prayer-times": "cd services/prayer-times-service && npm run dev",

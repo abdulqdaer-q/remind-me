@@ -3,13 +3,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY src/apps/salah-times/package*.json ./
+COPY webapp/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy source code
-COPY src/apps/salah-times ./
+COPY webapp ./
 
 # Build the application
 RUN npm run build
