@@ -25,6 +25,7 @@ export interface Translations {
   'time-remaining': string;
   'prayer': string;
   'time': string;
+  'title_in': string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -52,7 +53,8 @@ const translations: Record<Language, Translations> = {
     'next-prayer': 'Next Prayer',
     'time-remaining': 'Time Remaining',
     'prayer': 'Prayer',
-    'time': 'Time'
+    'time': 'Time',
+    'title_in': 'Prayer Times in'
   },
   ar: {
     'welcome-message': 'مرحباً! يمكنني مساعدتك في تتبع أوقات الصلاة وإرسال التذكيرات.',
@@ -78,7 +80,8 @@ const translations: Record<Language, Translations> = {
     'next-prayer': 'الصلاة التالية',
     'time-remaining': 'الوقت المتبقي',
     'prayer': 'الصلاة',
-    'time': 'الوقت'
+    'time': 'الوقت',
+    'title_in': 'أوقات الصلاة في'
   }
 };
 

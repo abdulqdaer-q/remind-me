@@ -24,7 +24,6 @@ export interface Translations {
   'setup-complete-with-selections': string;
   'button-send-location': string;
   'button-skip': string;
-  'title_in': string;
 
   // Prayer names
   fajr: string;
@@ -65,7 +64,6 @@ const translations: Record<string, Translations> = {
       '✅ Setup complete! Your selected features have been activated.',
     'button-send-location': '📍 Send Location',
     'button-skip': 'Skip',
-    'title_in': 'Prayer Times in',
 
     // Prayer names
     fajr: 'Fajr',
@@ -76,7 +74,7 @@ const translations: Record<string, Translations> = {
     isha: 'Isha',
   },
   ar: {
-    // General messages
+    // General messages 
     'welcome-message': 'مرحباً! أنا بلال، مساعدك لأوقات الصلاة 🕌',
     'send-location-prompt': 'يرجى إرسال موقعك لتلقي أوقات الصلاة.',
     'location-received': 'تم استلام الموقع! يمكنك الآن الاشتراك في تذكيرات الصلاة.',
@@ -102,7 +100,6 @@ const translations: Record<string, Translations> = {
     'setup-complete-with-selections': '✅ اكتمل الإعداد! تم تفعيل الميزات المختارة.',
     'button-send-location': '📍 إرسال الموقع',
     'button-skip': 'تخطي',
-    'title_in': 'أوقات الصلاة في',
 
     // Prayer names
     fajr: 'الفجر',
