@@ -58,4 +58,12 @@ export class TelegramBot {
   stop(reason?: string): void {
     this.bot.stop(reason);
   }
+
+  /**
+   * Get the underlying Telegraf bot instance
+   * Useful for services that need direct access to the bot
+   */
+  getBot(): Telegraf<BotContext> {
+    return this.bot;
+  }
 }
