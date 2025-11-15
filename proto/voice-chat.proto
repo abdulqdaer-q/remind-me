@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package voicechat;
+
+service VoiceChatService {
+  rpc StreamAzan (StreamAzanRequest) returns (StreamAzanResponse);
+  rpc StartVoiceChat (StartVoiceChatRequest) returns (StartVoiceChatResponse);
+  rpc StopVoiceChat (StopVoiceChatRequest) returns (StopVoiceChatResponse);
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message StreamAzanRequest {
+  int64 chat_id = 1;
+  string audio_url = 2;
+}
+
+message StreamAzanResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message StartVoiceChatRequest {
+  int64 chat_id = 1;
+}
+
+message StartVoiceChatResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message StopVoiceChatRequest {
+  int64 chat_id = 1;
+}
+
+message StopVoiceChatResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool healthy = 1;
+}

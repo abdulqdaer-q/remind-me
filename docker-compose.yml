@@ -45,6 +45,23 @@ services:
       retries: 3
       start_period: 40s
 
+  # Voice Chat Service (Python Pyrogram for azan broadcasting)
+  voice-chat-service:
+    build:
+      context: ./services/voice-chat-service
+      dockerfile: Dockerfile
+    container_name: voice-chat-service
+    ports:
+      - "50053:50053"  # gRPC
+    environment:
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN}
+      - VOICE_CHAT_GRPC_PORT=50053
+    networks:
+      - remind-me-network
+    restart: unless-stopped
+
   # Telegram Bot
   bot:
     build:
@@ -56,9 +73,13 @@ services:
       - WEB_APP_URL=${WEB_APP_URL:-http://localhost:8080}
       - TRANSLATION_SERVICE_URL=translation-service:50051
       - PRAYER_TIMES_SERVICE_URL=prayer-times-service:50052
+      - VOICE_CHAT_SERVICE_URL=voice-chat-service:50053
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
     depends_on:
       - translation-service
       - prayer-times-service
+      - voice-chat-service
     networks:
       - remind-me-network
     restart: unless-stopped
