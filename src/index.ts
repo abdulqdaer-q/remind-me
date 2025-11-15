@@ -36,6 +36,7 @@ import './presentation/telegram/handlers/TimingsHandler';
 import './presentation/telegram/handlers/SubscribeHandler';
 import './presentation/telegram/handlers/LocationHandler';
 import './presentation/telegram/handlers/StartHandler';
+import './presentation/telegram/handlers/TestReminderHandler';
 
 /**
  * Setup Dependency Injection Container
