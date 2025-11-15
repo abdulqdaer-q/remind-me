@@ -71,6 +71,11 @@ export class AladhanClient {
         time12h: this.convertTo12Hour(this.cleanTimeString(dayData.timings.Fajr))
       },
       {
+        name: 'Sunrise',
+        time: this.cleanTimeString(dayData.timings.Sunrise),
+        time12h: this.convertTo12Hour(this.cleanTimeString(dayData.timings.Sunrise))
+      },
+      {
         name: 'Dhuhr',
         time: this.cleanTimeString(dayData.timings.Dhuhr),
         time12h: this.convertTo12Hour(this.cleanTimeString(dayData.timings.Dhuhr))

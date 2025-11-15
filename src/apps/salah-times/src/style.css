@@ -1,65 +1,376 @@
-html { font-size: 62.5%; }
+/* CSS Variables for Telegram Theme */
+:root {
+  --tg-theme-bg-color: #f5f5f5;
+  --tg-theme-text-color: #000000;
+  --tg-theme-hint-color: #999999;
+  --tg-theme-link-color: #2481cc;
+  --tg-theme-button-color: #2481cc;
+  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-secondary-bg-color: #ffffff;
+  --tg-theme-header-bg-color: #ffffff;
+  --tg-theme-subtitle-text-color: #707579;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --active-card-shadow: 0 4px 20px rgba(36, 129, 204, 0.25);
+  --border-radius-card: 12px;
+  --spacing-card: 8px;
+}
+
+html {
+  font-size: 62.5%;
+  /* Prevent scrolling issues on iOS */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 *, *:before, *:after {
-  box-sizing: content-box;
+  box-sizing: border-box;
 }
 
 body {
   font-size: 1.4rem;
   line-height: 1.5;
-  font-family: 'Open Sans', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-weight: 300;
   letter-spacing: 0.2em;
-  color: #333;
-  background: #ecf0f1;
+  color: var(--tg-theme-text-color, #333);
+  background: var(--tg-theme-bg-color, #ecf0f1);
   text-align: center;
+  margin: 0;
+  padding: 1rem;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Prevent iOS bounce */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Safe area insets for notched devices */
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Telegram Dark Theme */
+body.theme-dark {
+  --tg-theme-bg-color: #0f0f0f;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #aaaaaa;
+  --tg-theme-link-color: #6ab2f2;
+  --tg-theme-button-color: #5288c1;
+  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-secondary-bg-color: #1c1c1e;
+  --tg-theme-header-bg-color: #1c1c1e;
+  --tg-theme-subtitle-text-color: #8e8e93;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --active-card-shadow: 0 4px 20px rgba(82, 136, 193, 0.4);
+}
+
+#app {
+  width: 100%;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 h1 {
-  text-align: center;
-  font-family: 'Varela Round', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
   line-height: 1.3;
-  margin: 5rem;
-  text-transform: uppercase;
+  margin: 2rem 0 1rem;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  color: var(--tg-theme-text-color, #333);
+  letter-spacing: -0.02em;
 }
 
 table {
   line-height: 1;
   width: 100%;
   max-width: 80rem;
-  margin: 5rem auto;
-  
+  margin: 2rem auto;
+  border-collapse: collapse;
+
   td {
-    width: 20%;
+    width: 16.66%;
     text-align: center;
     padding: 1rem;
+    transition: all 0.3s ease;
   }
-  
+
   tr:first-child {
     font-weight: bold;
     font-size: 1.1rem;
     text-transform: uppercase;
   }
-  
+
   tr:last-child {
     font-size: 2.8rem;
   }
-  
+
+  /* Hide prayer names on desktop (shown via header row) */
+  tr:last-child td .prayer-name {
+    display: none;
+  }
+
+  /* Show only time on desktop */
+  tr:last-child td .prayer-time {
+    display: inline-block;
+    font-size: 2.8rem;
+  }
+
   span {
     font-size: 1.2rem;
     font-weight: bold;
     letter-spacing: 0;
     vertical-align: top;
   }
-  
+
 }
 
 a {
   text-transform: uppercase;
   font-size: 1.4rem;
   font-weight: 400;
-  color: #3498db;
+  color: var(--tg-theme-link-color, #3498db);
   text-decoration: none;
 }
+
 .active {
-  color: green;
+  color: var(--tg-theme-button-color, green);
+  background: var(--tg-theme-secondary-bg-color, rgba(0, 128, 0, 0.05));
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Telegram-specific mobile optimizations */
+@media (max-width: 768px) {
+  /* Improve touch targets for mobile */
+  table td {
+    min-height: 44px; /* iOS touch target minimum */
+    position: relative;
+  }
+
+  /* Better spacing for mobile */
+  body {
+    padding: 0.5rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  /* Optimize active state for mobile */
+  .active {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+  }
+}
+
+/* Tablet styles */
+@media screen and (max-width: 768px) {
+  body {
+    font-size: 1.3rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem;
+  }
+
+  h1 {
+    margin: 1.5rem 0;
+  }
+
+  table {
+    margin: 1.5rem auto;
+
+    td {
+      padding: 0.8rem 0.5rem;
+    }
+
+    tr:first-child {
+      font-size: 1rem;
+    }
+
+    tr:last-child {
+      font-size: 2.2rem;
+    }
+  }
+}
+
+/* Mobile styles - Beautiful Vertical Card Layout */
+@media screen and (max-width: 480px) {
+  body {
+    font-size: 1.4rem;
+    letter-spacing: 0;
+    padding: 0;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    justify-content: flex-start;
+  }
+
+  #app {
+    padding: 0;
+  }
+
+  .header {
+    background: var(--tg-theme-header-bg-color, #fff);
+    margin: 0 -16px 16px;
+    padding: 16px 16px 20px;
+    border-radius: 0 0 20px 20px;
+    box-shadow: var(--card-shadow);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--tg-theme-text-color);
+  }
+
+  table {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-card);
+    max-width: 100%;
+    width: 100%;
+  }
+
+  table tr {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-card);
+  }
+
+  table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    width: 100%;
+    border-radius: var(--border-radius-card);
+    background: var(--tg-theme-secondary-bg-color, #fff);
+    box-shadow: var(--card-shadow);
+    min-height: 64px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  table td:active {
+    transform: scale(0.98);
+  }
+
+  /* Hide the header row in mobile */
+  table tr:first-child {
+    display: none;
+  }
+
+  /* Prayer name styling - show on mobile */
+  table tr:last-child td .prayer-name {
+    display: block !important;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--tg-theme-subtitle-text-color);
+    text-transform: capitalize;
+  }
+
+  /* Prayer time styling */
+  table tr:last-child td .prayer-time {
+    display: block !important;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--tg-theme-text-color);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* Active prayer - current prayer time */
+  .active {
+    background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc) 0%, var(--tg-theme-link-color, #1a73b8) 100%) !important;
+    box-shadow: var(--active-card-shadow) !important;
+    transform: scale(1.02);
+  }
+
+  .active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+  }
+
+  .active .prayer-name {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+  }
+
+  .active .prayer-time {
+    color: #ffffff !important;
+    font-weight: 800;
+  }
+
+  /* RTL support for vertical layout */
+  table[dir="rtl"] td {
+    flex-direction: row-reverse;
+  }
+}
+
+/* Very small mobile devices */
+@media screen and (max-width: 360px) {
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  table td {
+    padding: 14px 16px;
+    min-height: 60px;
+  }
+
+  table tr:last-child td .prayer-name {
+    font-size: 1.4rem;
+  }
+
+  table tr:last-child td .prayer-time {
+    font-size: 2rem;
+  }
+
+  .header {
+    padding: 14px 16px 18px;
+    margin: 0 -16px 12px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  body {
+    justify-content: flex-start;
+    padding-top: 1rem;
+  }
+
+  h1 {
+    margin: 0.5rem 0;
+    font-size: 2rem;
+  }
+
+  table {
+    margin: 0.5rem auto;
+  }
 }

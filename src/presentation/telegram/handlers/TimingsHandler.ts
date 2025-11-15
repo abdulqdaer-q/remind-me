@@ -38,7 +38,6 @@ export class TimingsHandler {
       );
       return;
     }
-
     // Generate mini app URL with user's location and language
     const miniAppUrl = this.formatter.generateMiniAppUrl(
       this.webAppUrl,
@@ -46,7 +45,6 @@ export class TimingsHandler {
       user.location!.longitude,
       user.language
     );
-
     await ctx.reply(
       '📱 Launch the prayer times app:',
       Markup.inlineKeyboard([Markup.button.webApp('🕌 Prayer Times', miniAppUrl)])
