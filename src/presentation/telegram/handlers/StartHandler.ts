@@ -31,22 +31,36 @@ export class StartHandler extends BaseHandler {
 
   /**
    * Handles the /start command
+   * Supports both private chats (individual users) and groups
    */
   @Command('start')
   async handleStart(ctx: BotContext): Promise<void> {
+    const chatId = ctx.chat?.id;
+    if (!chatId) return;
+
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Create or get user
+    // Determine if this is a group or private chat
+    const isGroup = ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
+
+    // For groups, register the group chat ID as the user ID
+    // For private chats, use the actual user ID
+    const entityId = isGroup ? chatId : userId;
+    const entityName = isGroup
+      ? (ctx.chat?.title || 'Group Chat')
+      : (ctx.from?.first_name || 'User');
+    const entityUsername = isGroup ? null : (ctx.from?.username || null);
+
+    // Create or get user/group
     await this.registerUserUseCase.execute({
-      userId,
-      username: ctx.from?.username || null,
-      displayName: ctx.from?.first_name || 'User',
+      userId: entityId,
+      username: entityUsername,
+      displayName: entityName,
       languageCode: ctx.from?.language_code,
     });
 
     // Set conversation state
-    const chatId = ctx.chat?.id;
     if (chatId) {
       this.sessionManager.updateSession(chatId, {
         conversationState: 'AWAITING_LANGUAGE',
@@ -54,6 +68,10 @@ export class StartHandler extends BaseHandler {
     }
 
     // Send welcome message with language selection
+    const welcomePrefix = isGroup
+      ? `👥 *Group Setup*\n\nWelcome to the Prayer Reminder Bot!\n\n`
+      : '';
+
     const welcomeText = await this.translationService.translate(
       'start-welcome',
       Language.default()
@@ -64,7 +82,7 @@ export class StartHandler extends BaseHandler {
     );
 
     await ctx.reply(
-      `${welcomeText}\n\n${chooseLanguageText}`,
+      `${welcomePrefix}${welcomeText}\n\n${chooseLanguageText}`,
       Markup.inlineKeyboard([
         [
           Markup.button.callback('🇬🇧 English', 'lang_en'),
@@ -80,21 +98,31 @@ export class StartHandler extends BaseHandler {
   @Action(/^lang_(.+)$/)
   async handleLanguageSelection(ctx: BotContext): Promise<void> {
     const userId = ctx.from?.id;
-    if (!userId || !ctx.match) return;
+    const chatId = ctx.chat?.id;
+    if (!userId || !chatId || !ctx.match) return;
 
     const languageCode = ctx.match[1]; // 'en' or 'ar'
     const language = Language.create(languageCode);
 
-    // Get and update user
+    // Determine if this is a group or private chat
+    const isGroup = ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
+
+    // For groups, use chat ID; for private chats, use user ID
+    const entityId = isGroup ? chatId : userId;
+    const entityName = isGroup
+      ? (ctx.chat?.title || 'Group Chat')
+      : (ctx.from?.first_name || 'User');
+    const entityUsername = isGroup ? null : (ctx.from?.username || null);
+
+    // Get and update user/group
     const user = await this.registerUserUseCase.execute({
-      userId,
-      username: ctx.from?.username || null,
-      displayName: ctx.from?.first_name || 'User',
+      userId: entityId,
+      username: entityUsername,
+      displayName: entityName,
       languageCode,
     });
 
     // Update session
-    const chatId = ctx.chat?.id;
     if (chatId) {
       this.sessionManager.updateSession(chatId, {
         tempData: { language: languageCode },
@@ -139,17 +167,21 @@ export class StartHandler extends BaseHandler {
 
     const location = ctx.message.location;
     const userId = ctx.from?.id;
-    if (!userId) return;
+    const chatId = ctx.chat?.id;
+    if (!userId || !chatId) return;
 
-    // Save location to user
+    // Determine if this is a group or private chat
+    const isGroup = ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
+    const entityId = isGroup ? chatId : userId;
+
+    // Save location to user/group
     await this.updateUserLocationUseCase.execute({
-      userId,
+      userId: entityId,
       latitude: location.latitude,
       longitude: location.longitude,
     });
 
     // Update session
-    const chatId = ctx.chat?.id;
     if (chatId) {
       this.sessionManager.updateSession(chatId, {
         tempData: {
@@ -205,13 +237,22 @@ export class StartHandler extends BaseHandler {
   @Action(/^func_(.+)$/)
   async handleFunctionalitySelection(ctx: BotContext): Promise<void> {
     const userId = ctx.from?.id;
-    if (!userId || !ctx.match) return;
+    const chatId = ctx.chat?.id;
+    if (!userId || !chatId || !ctx.match) return;
 
-    // Get user
+    // Determine if this is a group or private chat
+    const isGroup = ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
+    const entityId = isGroup ? chatId : userId;
+    const entityName = isGroup
+      ? (ctx.chat?.title || 'Group Chat')
+      : (ctx.from?.first_name || 'User');
+    const entityUsername = isGroup ? null : (ctx.from?.username || null);
+
+    // Get user/group
     const user = await this.registerUserUseCase.execute({
-      userId,
-      username: ctx.from?.username || null,
-      displayName: ctx.from?.first_name || 'User',
+      userId: entityId,
+      username: entityUsername,
+      displayName: entityName,
       languageCode: ctx.from?.language_code,
     });
 
@@ -219,7 +260,6 @@ export class StartHandler extends BaseHandler {
 
     if (functionality === 'done') {
       // Complete setup
-      const chatId = ctx.chat?.id;
       if (chatId) {
         this.sessionManager.clearSession(chatId);
       }
@@ -240,11 +280,11 @@ export class StartHandler extends BaseHandler {
       const funcType = functionality as 'reminder' | 'tracker' | 'remindByCall';
       user.toggleFunctionality(funcType);
 
-      // Save user with updated functionalities
+      // Save user/group with updated functionalities
       await this.registerUserUseCase.execute({
-        userId,
-        username: user.username,
-        displayName: user.displayName,
+        userId: entityId,
+        username: entityUsername,
+        displayName: entityName,
         languageCode: user.language.code,
       });
 
