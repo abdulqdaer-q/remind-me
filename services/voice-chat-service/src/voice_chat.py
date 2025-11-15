@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import tempfile
+import uuid
 from typing import Dict, Optional
 from pyrogram import Client
 from pytgcalls import PyTgCalls
@@ -15,12 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class VoiceChatManager:
-    """Manages voice chat streaming for Telegram groups."""
+    """Manages voice chat streaming for Telegram groups and 1-on-1 calls."""
 
     def __init__(self, client: Client):
         self.client = client
         self.pytgcalls = PyTgCalls(client)
-        self.active_calls: Dict[int, bool] = {}
+        self.active_calls: Dict[int, bool] = {}  # Group voice chats
+        self.active_private_calls: Dict[str, int] = {}  # call_id -> user_id mapping
         self.temp_files: Dict[int, str] = {}
 
     async def start(self):
@@ -35,9 +37,13 @@ class VoiceChatManager:
     async def stop(self):
         """Stop the pytgcalls client."""
         try:
-            # Leave all active calls
+            # Leave all active group voice chats
             for chat_id in list(self.active_calls.keys()):
                 await self.stop_voice_chat(chat_id)
+
+            # End all active private calls
+            for call_id in list(self.active_private_calls.keys()):
+                await self.end_call(call_id)
 
             # Clean up temp files
             for temp_file in self.temp_files.values():
@@ -209,4 +215,112 @@ class VoiceChatManager:
             return True
         except Exception as e:
             logger.error(f"Failed to start voice chat in {chat_id}: {e}")
+            return False
+
+    async def start_call(self, user_id: int, audio_url: str, duration_seconds: int = 180) -> tuple[bool, str]:
+        """
+        Start a 1-on-1 call with a user and play audio.
+
+        Args:
+            user_id: Telegram user ID to call
+            audio_url: URL of audio file to play during call
+            duration_seconds: Maximum call duration in seconds
+
+        Returns:
+            Tuple of (success, call_id)
+        """
+        call_id = str(uuid.uuid4())
+
+        try:
+            logger.info(f"Starting call {call_id} to user {user_id}")
+
+            # Download audio file
+            audio_path = await self.download_audio(audio_url)
+            self.temp_files[user_id] = audio_path
+
+            # Create audio stream
+            audio_stream = AudioPiped(audio_path)
+
+            # Start the call and play audio
+            try:
+                await self.pytgcalls.play(
+                    user_id,
+                    audio_stream
+                )
+                self.active_private_calls[call_id] = user_id
+                logger.info(f"Successfully started call {call_id} with user {user_id}")
+
+                # Schedule auto-hangup after duration
+                asyncio.create_task(self._auto_end_call(call_id, duration_seconds))
+
+                return True, call_id
+
+            except Exception as e:
+                logger.error(f"Failed to start call with user {user_id}: {e}")
+                # Clean up temp file
+                if user_id in self.temp_files:
+                    try:
+                        if os.path.exists(self.temp_files[user_id]):
+                            os.remove(self.temp_files[user_id])
+                        del self.temp_files[user_id]
+                    except:
+                        pass
+                return False, ""
+
+        except Exception as e:
+            logger.error(f"Failed to prepare call for user {user_id}: {e}")
+            return False, ""
+
+    async def _auto_end_call(self, call_id: str, duration_seconds: int):
+        """Automatically end call after specified duration."""
+        try:
+            await asyncio.sleep(duration_seconds)
+
+            if call_id in self.active_private_calls:
+                logger.info(f"Auto-ending call {call_id} after {duration_seconds}s")
+                await self.end_call(call_id)
+        except Exception as e:
+            logger.error(f"Error in auto-end call: {e}")
+
+    async def end_call(self, call_id: str) -> bool:
+        """
+        End an active 1-on-1 call.
+
+        Args:
+            call_id: The call identifier
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if call_id not in self.active_private_calls:
+                logger.warning(f"Call {call_id} not found in active calls")
+                return False
+
+            user_id = self.active_private_calls[call_id]
+            logger.info(f"Ending call {call_id} with user {user_id}")
+
+            # Leave the call
+            try:
+                await self.pytgcalls.leave_call(user_id)
+            except Exception as e:
+                logger.warning(f"Error leaving call: {e}")
+
+            # Clean up
+            del self.active_private_calls[call_id]
+
+            if user_id in self.temp_files:
+                try:
+                    temp_file = self.temp_files[user_id]
+                    if os.path.exists(temp_file):
+                        os.remove(temp_file)
+                    del self.temp_files[user_id]
+                except Exception as e:
+                    logger.warning(f"Failed to cleanup temp file: {e}")
+
+            logger.info(f"Successfully ended call {call_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to end call {call_id}: {e}")
             return False

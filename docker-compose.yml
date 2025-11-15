@@ -56,7 +56,7 @@ services:
     environment:
       - API_ID=${API_ID}
       - API_HASH=${API_HASH}
-      - BOT_TOKEN=${BOT_TOKEN}
+      - SESSION_STRING=${SESSION_STRING}
       - VOICE_CHAT_GRPC_PORT=50053
     networks:
       - remind-me-network

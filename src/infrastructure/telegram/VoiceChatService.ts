@@ -161,6 +161,69 @@ export class VoiceChatService {
   }
 
   /**
+   * Start a 1-on-1 voice call with a user
+   *
+   * @param userId - The user ID to call
+   * @param audioUrl - URL of audio file to play during call
+   * @param durationSeconds - Maximum call duration (default: 180 seconds)
+   */
+  async startCall(userId: number, audioUrl: string, durationSeconds: number = 180): Promise<string | null> {
+    if (!this.isAvailable()) {
+      console.warn(`Cannot start call: voice chat not available for user ${userId}`);
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      console.log(`📞 Starting call to user ${userId}`);
+
+      this.client.StartCall(
+        {
+          user_id: userId,
+          audio_url: audioUrl,
+          duration_seconds: durationSeconds
+        },
+        (error: any, response: any) => {
+          if (error) {
+            console.error(`Failed to start call to user ${userId}:`, error.message);
+            resolve(null);
+          } else {
+            if (response.success) {
+              console.log(`✅ ${response.message} - Call ID: ${response.call_id}`);
+              resolve(response.call_id);
+            } else {
+              console.warn(`⚠️  ${response.message}`);
+              resolve(null);
+            }
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * End an active 1-on-1 call
+   *
+   * @param callId - The call ID to end
+   */
+  async endCall(callId: string): Promise<boolean> {
+    if (!this.isAvailable()) {
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      this.client.EndCall({ call_id: callId }, (error: any, response: any) => {
+        if (error) {
+          console.error(`Failed to end call ${callId}:`, error.message);
+          resolve(false);
+        } else {
+          console.log(`✅ ${response.message}`);
+          resolve(response.success);
+        }
+      });
+    });
+  }
+
+  /**
    * Disconnect the client
    */
   async disconnect(): Promise<void> {

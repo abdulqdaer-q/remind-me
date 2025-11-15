@@ -99,4 +99,39 @@ export class NotificationService {
       return 'failed';
     }
   }
+
+  /**
+   * Call a user with audio playback (1-on-1 call)
+   *
+   * @param userId - The user ID to call
+   * @param audioUrl - URL of audio to play during call
+   * @param durationSeconds - Maximum call duration (default: 180 seconds)
+   * @returns Promise<string | null> - Call ID if successful, null otherwise
+   */
+  async callUser(
+    userId: number,
+    audioUrl: string,
+    durationSeconds: number = 180
+  ): Promise<string | null> {
+    if (!this.voiceChatService?.isAvailable()) {
+      console.warn(`Voice chat service not available for calling user ${userId}`);
+      return null;
+    }
+
+    try {
+      console.log(`📞 Initiating call to user ${userId} with audio: ${audioUrl}`);
+      const callId = await this.voiceChatService.startCall(userId, audioUrl, durationSeconds);
+
+      if (callId) {
+        console.log(`✅ Successfully initiated call to user ${userId} (Call ID: ${callId})`);
+        return callId;
+      } else {
+        console.warn(`⚠️  Failed to initiate call to user ${userId}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Failed to call user ${userId}:`, error);
+      return null;
+    }
+  }
 }
