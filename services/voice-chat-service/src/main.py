@@ -30,21 +30,27 @@ async def main():
     # Get configuration from environment
     api_id = os.getenv('API_ID')
     api_hash = os.getenv('API_HASH')
-    bot_token = os.getenv('BOT_TOKEN')
+    session_string = os.getenv('SESSION_STRING')
     grpc_port = int(os.getenv('VOICE_CHAT_GRPC_PORT', '50053'))
 
-    if not all([api_id, api_hash, bot_token]):
-        logger.error("Missing required environment variables: API_ID, API_HASH, BOT_TOKEN")
+    if not all([api_id, api_hash]):
+        logger.error("Missing required environment variables: API_ID, API_HASH")
         sys.exit(1)
 
-    logger.info("Initializing Pyrogram client...")
+    if not session_string:
+        logger.error("Missing SESSION_STRING environment variable")
+        logger.error("Run 'python generate_session.py' to create a session string")
+        sys.exit(1)
 
-    # Initialize Pyrogram client
+    logger.info("Initializing Pyrogram client with user session...")
+
+    # Initialize Pyrogram client with user session (not bot token!)
+    # This avoids conflicts with the main bot and provides better voice chat support
     app = Client(
-        "voice_chat_bot",
+        name="voice_chat_user",
         api_id=int(api_id),
         api_hash=api_hash,
-        bot_token=bot_token,
+        session_string=session_string,
         workdir="/tmp"
     )
 

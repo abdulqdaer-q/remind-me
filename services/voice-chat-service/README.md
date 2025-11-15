@@ -32,14 +32,53 @@ This service provides voice chat streaming capabilities that are not available i
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Important: User Account Required
+
+This service uses a **USER account** (not the bot) for voice chat streaming. This is because:
+
+1. **Avoids conflicts**: The main bot is already using the bot token
+2. **Better support**: pytgcalls works better with user accounts
+3. **More features**: User accounts have fewer limitations with voice chats
+
+**Setup Requirements:**
+- A separate Telegram account (use a different phone number, NOT your main account)
+- This account must be admin in groups where you want to broadcast azan
+- The account must have permission to manage voice chats
+
 ## Configuration
+
+### Step 1: Get API Credentials
+
+1. Go to https://my.telegram.org
+2. Log in with your phone number
+3. Go to "API development tools"
+4. Create a new application
+5. Copy the `api_id` and `api_hash`
+
+### Step 2: Generate Session String
+
+Run the session generator script:
+
+```bash
+cd services/voice-chat-service
+python generate_session.py
+```
+
+This will:
+- Prompt you to enter a phone number (use a SEPARATE account)
+- Send you a verification code
+- Generate a session string
+
+**IMPORTANT**: Keep the session string SECRET! It gives full access to that Telegram account.
+
+### Step 3: Environment Variables
 
 Required environment variables:
 
 ```bash
 API_ID=12345678                          # Telegram API ID from my.telegram.org
 API_HASH=your_api_hash                   # Telegram API hash
-BOT_TOKEN=your_bot_token                 # Bot token from @BotFather
+SESSION_STRING=your_session_string       # Generated from generate_session.py
 VOICE_CHAT_GRPC_PORT=50053              # gRPC server port (default: 50053)
 ```
 
@@ -96,8 +135,16 @@ rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
 # Install dependencies
 pip install -r requirements.txt
 
+# Generate session string (first time only)
+python generate_session.py
+
 # Generate proto files
 ./generate_proto.sh
+
+# Set environment variables in .env file:
+# API_ID=...
+# API_HASH=...
+# SESSION_STRING=...
 
 # Run the service
 python src/main.py
@@ -110,7 +157,7 @@ python src/main.py
 docker build -t voice-chat-service .
 
 # Run container
-docker run -e API_ID=xxx -e API_HASH=xxx -e BOT_TOKEN=xxx voice-chat-service
+docker run -e API_ID=xxx -e API_HASH=xxx -e SESSION_STRING=xxx voice-chat-service
 ```
 
 ## How It Works
@@ -133,15 +180,23 @@ The service tries to create a voice chat automatically. If this fails, manually 
 
 ### Audio not streaming
 
-- Verify the bot has admin permissions in the group
+- Verify the **user account** (not bot) is admin in the group with voice chat permissions
 - Check that the audio URL is accessible
 - Ensure ffmpeg is installed in the container
 
 ### Connection issues
 
 - Verify API_ID and API_HASH are correct
+- Verify SESSION_STRING is valid (regenerate if needed)
 - Check network connectivity to Telegram servers
 - Ensure gRPC port 50053 is not blocked
+
+### "Two bot instances" error
+
+If you see conflicts:
+- Make sure you're using SESSION_STRING (user account), NOT BOT_TOKEN
+- The Python service should use a separate user account
+- The TypeScript bot uses the BOT_TOKEN
 
 ## Dependencies
 
