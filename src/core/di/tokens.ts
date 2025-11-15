@@ -28,6 +28,7 @@ export const TOKENS = {
   // Reminder System
   NotificationService: Symbol.for('NotificationService'),
   ReminderScheduler: Symbol.for('ReminderScheduler'),
+  VoiceChatService: Symbol.for('VoiceChatService'),
 
   // Configuration
   WebAppUrl: Symbol.for('WebAppUrl'),

@@ -29,6 +29,7 @@ import { PrayerTimesFormatter } from './presentation/telegram/formatters/PrayerT
 // Reminder System
 import { NotificationService } from './infrastructure/telegram/NotificationService';
 import { ReminderScheduler } from './application/reminder/ReminderScheduler';
+import { VoiceChatService } from './infrastructure/telegram/VoiceChatService';
 
 // Import handlers to ensure decorators are executed
 import './presentation/telegram/handlers/TimingsHandler';
@@ -133,9 +134,27 @@ function bootstrap(): void {
 
   // Register reminder services after bot is created
   console.log('> Setting up reminder system...');
+
+  // Register VoiceChatService (optional - only if configured)
+  const voiceChatService = new VoiceChatService(
+    settings.API_ID,
+    settings.API_HASH,
+    settings.SESSION_STRING
+  );
+
+  container.register(TOKENS.VoiceChatService, () => voiceChatService, 'singleton');
+
+  // Initialize voice chat service if configured
+  if (settings.API_ID && settings.API_HASH) {
+    console.log('> Initializing voice chat service...');
+    voiceChatService.initialize().catch((error) => {
+      console.error('Failed to initialize voice chat service:', error);
+    });
+  }
+
   container.register(
     TOKENS.NotificationService,
-    () => new NotificationService(bot.getBot()),
+    () => new NotificationService(bot.getBot(), voiceChatService),
     'singleton'
   );
 
@@ -159,10 +178,17 @@ function bootstrap(): void {
   const scheduler = container.resolve(TOKENS.ReminderScheduler) as ReminderScheduler;
   scheduler.start();
 
-  // Graceful shutdown for scheduler
-  const gracefulShutdown = (signal: string) => {
+  // Graceful shutdown for scheduler and voice chat
+  const gracefulShutdown = async (signal: string) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
     scheduler.stop();
+
+    // Disconnect voice chat service if it's running
+    if (voiceChatService.isAvailable()) {
+      console.log('> Disconnecting voice chat service...');
+      await voiceChatService.disconnect();
+    }
+
     process.exit(0);
   };
 
