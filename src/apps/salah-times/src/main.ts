@@ -1,6 +1,25 @@
 import './style.css';
 
+// ===== Configuration =====
+const PRAYER_TIMES_SERVICE_URL = import.meta.env.VITE_PRAYER_TIMES_SERVICE_URL || 'http://localhost:3002';
+const TRANSLATION_SERVICE_URL = import.meta.env.VITE_TRANSLATION_SERVICE_URL || 'http://localhost:3001';
+
 // ===== Types =====
+interface Prayer {
+  name: string;
+  time: string;
+  time12h: string;
+}
+
+interface PrayerTimesResponse {
+  date: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  prayers: Prayer[];
+}
+
 interface PrayerTimings {
   Fajr: string;
   Sunrise: string;
@@ -10,18 +29,6 @@ interface PrayerTimings {
   Isha: string;
 }
 
-interface AladhanResponse {
-  data: Array<{
-    timings: PrayerTimings;
-    date: {
-      gregorian: {
-        date: string;
-        day: string;
-      };
-    };
-  }>;
-}
-
 interface QueryParams {
   lat: string;
   lng: string;
@@ -29,29 +36,50 @@ interface QueryParams {
 }
 
 // ===== Translations =====
-const translations: Record<string, Record<string, string>> = {
-  en: {
-    title: 'Prayer Times',
-    fajr: 'Fajr',
-    sunrise: 'Sunrise',
-    dhuhr: 'Dhuhr',
-    asr: 'Asr',
-    maghrib: 'Maghrib',
-    isha: 'Isha',
-  },
-  ar: {
-    title: 'أوقات الصلاة',
-    fajr: 'الفجر',
-    sunrise: 'الشروق',
-    dhuhr: 'الظهر',
-    asr: 'العصر',
-    maghrib: 'المغرب',
-    isha: 'العشاء',
-  },
-};
+const translationCache: Record<string, Record<string, string>> = {};
 
-const translate = (key: string, lang: string): string => {
-  return translations[lang]?.[key] || translations.en[key] || key;
+const translate = async (key: string, lang: string): Promise<string> => {
+  // Check cache first
+  if (translationCache[lang]?.[key]) {
+    return translationCache[lang][key];
+  }
+
+  try {
+    const response = await fetch(`${TRANSLATION_SERVICE_URL}/translate/${lang}/${key}`);
+    const data = await response.json();
+
+    // Cache the translation
+    if (!translationCache[lang]) {
+      translationCache[lang] = {};
+    }
+    translationCache[lang][key] = data.translation;
+
+    return data.translation;
+  } catch (error) {
+    console.error(`Translation error for key "${key}":`, error);
+    // Fallback translations
+    const fallback: Record<string, Record<string, string>> = {
+      en: {
+        title: 'Prayer Times',
+        fajr: 'Fajr',
+        sunrise: 'Sunrise',
+        dhuhr: 'Dhuhr',
+        asr: 'Asr',
+        maghrib: 'Maghrib',
+        isha: 'Isha',
+      },
+      ar: {
+        title: 'أوقات الصلاة',
+        fajr: 'الفجر',
+        sunrise: 'الشروق',
+        dhuhr: 'الظهر',
+        asr: 'العصر',
+        maghrib: 'المغرب',
+        isha: 'العشاء',
+      },
+    };
+    return fallback[lang]?.[key] || fallback.en[key] || key;
+  }
 };
 
 // ===== Prayer Times API =====
@@ -61,32 +89,31 @@ const fetchPrayerTimes = async (
 ): Promise<PrayerTimings> => {
   const today = new Date();
   const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const date = `${year}-${month}-${day}`;
 
-  const url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${lat}&longitude=${lng}&method=4`;
+  const url = `${PRAYER_TIMES_SERVICE_URL}/prayer-times?lat=${lat}&lng=${lng}&date=${date}`;
 
   const response = await fetch(url);
-  const data: AladhanResponse = await response.json();
+  const data: PrayerTimesResponse = await response.json();
 
-  // Find today's data
-  const dayData = data.data.find((e) => e.date.gregorian.day === String(day));
-
-  if (!dayData) {
-    throw new Error('Prayer times not found for today');
-  }
-
-  // Clean time strings (remove timezone info)
-  const cleanTime = (time: string) => time.split(' ')[0];
-
-  return {
-    Fajr: cleanTime(dayData.timings.Fajr),
-    Sunrise: cleanTime(dayData.timings.Sunrise),
-    Dhuhr: cleanTime(dayData.timings.Dhuhr),
-    Asr: cleanTime(dayData.timings.Asr),
-    Maghrib: cleanTime(dayData.timings.Maghrib),
-    Isha: cleanTime(dayData.timings.Isha),
+  // Convert the response to PrayerTimings format
+  const timings: PrayerTimings = {
+    Fajr: '',
+    Sunrise: '',
+    Dhuhr: '',
+    Asr: '',
+    Maghrib: '',
+    Isha: '',
   };
+
+  data.prayers.forEach((prayer) => {
+    const prayerName = prayer.name as keyof PrayerTimings;
+    timings[prayerName] = prayer.time;
+  });
+
+  return timings;
 };
 
 // ===== Utility Functions =====
@@ -147,14 +174,19 @@ const renderPrayerTimesTable = async (
 
   const isRtl = lang === 'ar';
 
+  // Fetch all translations asynchronously
+  const translatedNames = await Promise.all(
+    prayerNames.map(name => translate(name, lang))
+  );
+
   return `
   <table dir="${isRtl ? 'rtl' : 'ltr'}">
     <tr>
-      ${prayerNames
+      ${translatedNames
         .map(
-          (name, idx) => `
+          (translatedName, idx) => `
         <td class="${idx === nextPrayerIdx ? 'active' : ''}">
-          ${translate(name, lang)}
+          ${translatedName}
         </td>
       `
         )
@@ -180,12 +212,16 @@ const initApp = async () => {
   const { lat, lng, lang } = parseQueryParams();
 
   try {
-    const tableHtml = await renderPrayerTimesTable(lat, lng, lang);
+    const [tableHtml, title] = await Promise.all([
+      renderPrayerTimesTable(lat, lng, lang),
+      translate('title', lang)
+    ]);
+
     const appElement = document.querySelector<HTMLDivElement>('#app');
 
     if (appElement) {
       appElement.innerHTML = `
-        <h1>${translate('title', lang)}</h1>
+        <h1>${title}</h1>
         ${tableHtml}
       `;
     }

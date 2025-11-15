@@ -1,6 +1,6 @@
 import { Context, Markup } from 'telegraf';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
-import { TranslationService } from '../../../infrastructure/i18n/TranslationService';
+import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
 
 /**
  * Subscribe Command Handler
@@ -9,7 +9,7 @@ import { TranslationService } from '../../../infrastructure/i18n/TranslationServ
 export class SubscribeHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
-    private readonly translationService: TranslationService
+    private readonly translationService: HttpTranslationService
   ) {}
 
   async handle(ctx: Context): Promise<void> {
@@ -26,11 +26,11 @@ export class SubscribeHandler {
       languageCode: ctx.from.language_code,
     });
 
-    const welcomeMessage = this.translationService.translate(
+    const welcomeMessage = await this.translationService.translate(
       'welcome-message',
       user.language
     );
-    const locationPrompt = this.translationService.translate(
+    const locationPrompt = await this.translationService.translate(
       'send-location-prompt',
       user.language
     );

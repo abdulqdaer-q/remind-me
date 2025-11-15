@@ -2,7 +2,7 @@ import { Markup } from 'telegraf';
 import { BotContext, SessionManager } from '../../../infrastructure/telegram/Session';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
 import { UpdateUserLocationUseCase } from '../../../application/user/UpdateUserLocationUseCase';
-import { TranslationService } from '../../../infrastructure/i18n/TranslationService';
+import { HttpTranslationService } from '../../../infrastructure/i18n/HttpTranslationService';
 import { Language } from '../../../domain/shared/Language';
 import { User } from '../../../domain/user/User';
 
@@ -14,7 +14,7 @@ export class StartHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly updateUserLocationUseCase: UpdateUserLocationUseCase,
-    private readonly translationService: TranslationService,
+    private readonly translationService: HttpTranslationService,
     private readonly sessionManager: SessionManager
   ) {}
 
@@ -42,11 +42,11 @@ export class StartHandler {
     }
 
     // Send welcome message with language selection
-    const welcomeText = this.translationService.translate(
+    const welcomeText = await this.translationService.translate(
       'start-welcome',
       Language.default()
     );
-    const chooseLanguageText = this.translationService.translate(
+    const chooseLanguageText = await this.translationService.translate(
       'choose-language',
       Language.default()
     );
@@ -92,15 +92,15 @@ export class StartHandler {
     // Acknowledge language selection
     await ctx.answerCbQuery();
     await ctx.editMessageText(
-      this.translationService.translate('language-selected', language)
+      await this.translationService.translate('language-selected', language)
     );
 
     // Request location
-    const locationText = this.translationService.translate(
+    const locationText = await this.translationService.translate(
       'request-location',
       language
     );
-    const buttonText = this.translationService.translate(
+    const buttonText = await this.translationService.translate(
       'button-send-location',
       language
     );
@@ -152,28 +152,28 @@ export class StartHandler {
 
     // Acknowledge location save
     await ctx.reply(
-      this.translationService.translate('location-saved', user.language),
+      await this.translationService.translate('location-saved', user.language),
       Markup.removeKeyboard()
     );
 
     // Ask for functionality preferences
-    const functionalitiesText = this.translationService.translate(
+    const functionalitiesText = await this.translationService.translate(
       'choose-functionalities',
       user.language
     );
-    const reminderText = this.translationService.translate(
+    const reminderText = await this.translationService.translate(
       'functionality-reminder',
       user.language
     );
-    const trackerText = this.translationService.translate(
+    const trackerText = await this.translationService.translate(
       'functionality-tracker',
       user.language
     );
-    const remindByCallText = this.translationService.translate(
+    const remindByCallText = await this.translationService.translate(
       'functionality-remind-by-call',
       user.language
     );
-    const skipText = this.translationService.translate('button-skip', user.language);
+    const skipText = await this.translationService.translate('button-skip', user.language);
 
     await ctx.reply(
       functionalitiesText,
@@ -205,11 +205,11 @@ export class StartHandler {
       const hasSelections = user.functionalities.hasAnyEnabled();
 
       const completeText = hasSelections
-        ? this.translationService.translate(
+        ? await this.translationService.translate(
             'setup-complete-with-selections',
             user.language
           )
-        : this.translationService.translate('setup-complete', user.language);
+        : await this.translationService.translate('setup-complete', user.language);
 
       await ctx.answerCbQuery();
       await ctx.editMessageText(completeText);
@@ -227,19 +227,19 @@ export class StartHandler {
       });
 
       // Update the keyboard to show checkmarks
-      const reminderText = this.translationService.translate(
+      const reminderText = await this.translationService.translate(
         'functionality-reminder',
         user.language
       );
-      const trackerText = this.translationService.translate(
+      const trackerText = await this.translationService.translate(
         'functionality-tracker',
         user.language
       );
-      const remindByCallText = this.translationService.translate(
+      const remindByCallText = await this.translationService.translate(
         'functionality-remind-by-call',
         user.language
       );
-      const skipText = this.translationService.translate(
+      const skipText = await this.translationService.translate(
         'button-skip',
         user.language
       );
