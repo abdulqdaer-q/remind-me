@@ -1,5 +1,6 @@
 import { Context, Middleware } from 'telegraf';
 import { Update } from 'telegraf/types';
+import Redis from 'ioredis';
 
 /**
  * Session Data
@@ -30,34 +31,87 @@ export interface BotContext extends Context<Update> {
 
 /**
  * Session Manager
- * Simple in-memory session storage for conversation state
+ * Redis-backed session storage for conversation state
+ * Provides persistence and scalability for session data
  */
 export class SessionManager {
-  private sessions = new Map<number, SessionData>();
+  private redis: Redis;
+  private readonly SESSION_TTL = 86400; // 24 hours in seconds
+  private readonly SESSION_PREFIX = 'session:';
 
-  getSession(chatId: number): SessionData {
-    if (!this.sessions.has(chatId)) {
-      this.sessions.set(chatId, {});
+  constructor(redisUrl: string) {
+    this.redis = new Redis(redisUrl, {
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      maxRetriesPerRequest: 3,
+    });
+
+    this.redis.on('error', (err) => {
+      console.error('Redis connection error:', err);
+    });
+
+    this.redis.on('connect', () => {
+      console.log('✓ Redis connected successfully');
+    });
+  }
+
+  private getKey(chatId: number): string {
+    return `${this.SESSION_PREFIX}${chatId}`;
+  }
+
+  async getSession(chatId: number): Promise<SessionData> {
+    try {
+      const key = this.getKey(chatId);
+      const data = await this.redis.get(key);
+
+      if (!data) {
+        return {};
+      }
+
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error getting session:', error);
+      return {};
     }
-    return this.sessions.get(chatId)!;
   }
 
-  updateSession(chatId: number, data: Partial<SessionData>): void {
-    const current = this.getSession(chatId);
-    this.sessions.set(chatId, { ...current, ...data });
+  async updateSession(chatId: number, data: Partial<SessionData>): Promise<void> {
+    try {
+      const key = this.getKey(chatId);
+      const current = await this.getSession(chatId);
+      const updated = { ...current, ...data };
+
+      await this.redis.setex(key, this.SESSION_TTL, JSON.stringify(updated));
+    } catch (error) {
+      console.error('Error updating session:', error);
+    }
   }
 
-  clearSession(chatId: number): void {
-    this.sessions.delete(chatId);
+  async clearSession(chatId: number): Promise<void> {
+    try {
+      const key = this.getKey(chatId);
+      await this.redis.del(key);
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
   }
 
   createMiddleware(): Middleware<BotContext> {
-    return (ctx, next) => {
+    return async (ctx, next) => {
       const chatId = ctx.chat?.id;
       if (chatId) {
-        ctx.session = this.getSession(chatId);
+        ctx.session = await this.getSession(chatId);
       }
       return next();
     };
+  }
+
+  /**
+   * Gracefully close Redis connection
+   */
+  async disconnect(): Promise<void> {
+    await this.redis.quit();
   }
 }

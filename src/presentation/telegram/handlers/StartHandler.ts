@@ -48,7 +48,7 @@ export class StartHandler extends BaseHandler {
     // Set conversation state
     const chatId = ctx.chat?.id;
     if (chatId) {
-      this.sessionManager.updateSession(chatId, {
+      await this.sessionManager.updateSession(chatId, {
         conversationState: 'AWAITING_LANGUAGE',
       });
     }
@@ -96,7 +96,7 @@ export class StartHandler extends BaseHandler {
     // Update session
     const chatId = ctx.chat?.id;
     if (chatId) {
-      this.sessionManager.updateSession(chatId, {
+      await this.sessionManager.updateSession(chatId, {
         tempData: { language: languageCode },
         conversationState: 'AWAITING_LOCATION',
       });
@@ -151,7 +151,7 @@ export class StartHandler extends BaseHandler {
     // Update session
     const chatId = ctx.chat?.id;
     if (chatId) {
-      this.sessionManager.updateSession(chatId, {
+      await this.sessionManager.updateSession(chatId, {
         tempData: {
           ...ctx.session?.tempData,
           location: {
@@ -221,7 +221,7 @@ export class StartHandler extends BaseHandler {
       // Complete setup
       const chatId = ctx.chat?.id;
       if (chatId) {
-        this.sessionManager.clearSession(chatId);
+        await this.sessionManager.clearSession(chatId);
       }
 
       const hasSelections = user.functionalities.hasAnyEnabled();

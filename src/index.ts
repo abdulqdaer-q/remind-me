@@ -59,7 +59,7 @@ function setupContainer(): Container {
 
   container.register(
     TOKENS.SessionManager,
-    () => new SessionManager(),
+    () => new SessionManager(settings.REDIS_URL),
     'singleton'
   );
 
