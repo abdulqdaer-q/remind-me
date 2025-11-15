@@ -12,7 +12,7 @@
       "longitude": 55.371161
     },
     "functionalities": {
-      "reminder": false,
+      "reminder": true,
       "tracker": false,
       "remindByCall": false
     }
