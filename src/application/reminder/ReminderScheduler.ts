@@ -174,11 +174,14 @@ export class ReminderScheduler {
       // Check if it's a group and broadcast azan
       const isGroup = await this.notificationService.isGroup(userId);
       if (isGroup) {
-        // TODO: Add azan audio URL here when available
-        // const azanUrl = 'https://example.com/azan.ogg'; // Use .ogg or .mp3 format
-        // const method = await this.notificationService.broadcastAzan(userId, azanUrl, `🕌 ${prayer} Azan`);
-        // console.log(`📢 Broadcasted azan for ${prayer} via ${method} in group ${userId}`);
-        console.log(`📢 Would broadcast azan for ${prayer} in group ${userId} (voice chat or voice message)`);
+        // Broadcast azan in groups (voice chat streaming or voice message)
+        const azanUrl = 'https://cdn.aladhan.com/audio/adhans/a1.mp3';
+        const method = await this.notificationService.broadcastAzan(
+          userId,
+          azanUrl,
+          `🕌 ${prayer} Azan`
+        );
+        console.log(`📢 Broadcasted azan for ${prayer} via ${method} in group ${userId}`);
       }
 
       console.log(`✅ Sent prayer time reminder for ${prayer} to user ${userId}`);

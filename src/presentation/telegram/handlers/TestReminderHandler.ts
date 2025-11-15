@@ -124,13 +124,13 @@ export class TestReminderHandler extends BaseHandler {
 
     await ctx.answerCbQuery('🎵 Testing azan broadcast...');
 
-    // Test with a placeholder URL (you can replace with actual azan URL)
-    const testAzanUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+    // Use actual azan from Aladhan
+    const azanUrl = 'https://cdn.aladhan.com/audio/adhans/a1.mp3';
 
     try {
       const method = await this.notificationService.broadcastAzan(
         chatId,
-        testAzanUrl,
+        azanUrl,
         '🕌 Test Azan'
       );
 
