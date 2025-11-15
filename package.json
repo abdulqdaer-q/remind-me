@@ -12,9 +12,10 @@
     "start:all": "concurrently \"npm run start\" \"npm run webapp\" --names \"bot,webapp\" --prefix-colors \"cyan,magenta\"",
     "services:translation": "cd services/translation-service && npm run dev",
     "services:prayer-times": "cd services/prayer-times-service && npm run dev",
+    "services:voice-chat": "cd services/voice-chat-service && python src/main.py",
     "services:install": "cd services/translation-service && npm install && cd ../prayer-times-service && npm install",
     "services:build": "cd services/translation-service && npm run build && cd ../prayer-times-service && npm run build",
-    "microservices:dev": "concurrently \"npm run services:translation\" \"npm run services:prayer-times\" \"npm run dev\" \"npm run webapp\" --names \"translation,prayer-times,bot,webapp\" --prefix-colors \"green,blue,cyan,magenta\"",
+    "microservices:dev": "concurrently \"npm run services:translation\" \"npm run services:prayer-times\" \"npm run services:voice-chat\" \"npm run dev\" \"npm run webapp\" --names \"translation,prayer-times,voice-chat,bot,webapp\" --prefix-colors \"green,blue,yellow,cyan,magenta\"",
     "docker:up": "docker-compose up --build",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
