@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package translation;
+
+// Translation Service
+service TranslationService {
+  // Get a single translation
+  rpc GetTranslation(TranslationRequest) returns (TranslationResponse);
+
+  // Get multiple translations
+  rpc GetTranslations(TranslationsRequest) returns (TranslationsResponse);
+
+  // Get all translations for a language
+  rpc GetAllTranslations(AllTranslationsRequest) returns (AllTranslationsResponse);
+
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request for single translation
+message TranslationRequest {
+  string language = 1;  // Language code (en, ar)
+  string key = 2;       // Translation key
+}
+
+// Response for single translation
+message TranslationResponse {
+  string key = 1;
+  string language = 2;
+  string translation = 3;
+}
+
+// Request for multiple translations
+message TranslationsRequest {
+  string language = 1;
+  repeated string keys = 2;
+}
+
+// Response for multiple translations
+message TranslationsResponse {
+  string language = 1;
+  map<string, string> translations = 2;
+}
+
+// Request for all translations
+message AllTranslationsRequest {
+  string language = 1;
+}
+
+// Response for all translations
+message AllTranslationsResponse {
+  string language = 1;
+  map<string, string> translations = 2;
+}
+
+// Health check request
+message HealthCheckRequest {}
+
+// Health check response
+message HealthCheckResponse {
+  string status = 1;
+  string service = 2;
+}

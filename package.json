@@ -9,11 +9,21 @@
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "webapp": "cd src/apps/salah-times && npm run dev",
-    "start:all": "concurrently \"npm run start\" \"npm run webapp\" --names \"bot,webapp\" --prefix-colors \"cyan,magenta\""
+    "start:all": "concurrently \"npm run start\" \"npm run webapp\" --names \"bot,webapp\" --prefix-colors \"cyan,magenta\"",
+    "services:translation": "cd services/translation-service && npm run dev",
+    "services:prayer-times": "cd services/prayer-times-service && npm run dev",
+    "services:install": "cd services/translation-service && npm install && cd ../prayer-times-service && npm install",
+    "services:build": "cd services/translation-service && npm run build && cd ../prayer-times-service && npm run build",
+    "microservices:dev": "concurrently \"npm run services:translation\" \"npm run services:prayer-times\" \"npm run dev\" \"npm run webapp\" --names \"translation,prayer-times,bot,webapp\" --prefix-colors \"green,blue,cyan,magenta\"",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "author": "AbdulQader Qassab",
   "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.9.14",
+    "@grpc/proto-loader": "^0.7.10",
     "axios": "^1.6.5",
     "fast-glob": "^3.3.2",
     "telegraf": "^4.15.3"

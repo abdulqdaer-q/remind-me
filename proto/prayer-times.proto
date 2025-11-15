@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package prayertimes;
+
+// Prayer Times Service
+service PrayerTimesService {
+  // Get prayer times for a location and date
+  rpc GetPrayerTimes(PrayerTimesRequest) returns (PrayerTimesResponse);
+
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request for prayer times
+message PrayerTimesRequest {
+  double latitude = 1;   // Latitude (-90 to 90)
+  double longitude = 2;  // Longitude (-180 to 180)
+  string date = 3;       // Date in YYYY-MM-DD format (optional)
+}
+
+// Single prayer time
+message Prayer {
+  string name = 1;      // Prayer name (Fajr, Dhuhr, etc.)
+  string time = 2;      // Time in 24h format (HH:MM)
+  string time12h = 3;   // Time in 12h format (H:MM AM/PM)
+}
+
+// Location information
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+// Response for prayer times
+message PrayerTimesResponse {
+  string date = 1;
+  Location location = 2;
+  repeated Prayer prayers = 3;
+}
+
+// Health check request
+message HealthCheckRequest {}
+
+// Health check response
+message HealthCheckResponse {
+  string status = 1;
+  string service = 2;
+}

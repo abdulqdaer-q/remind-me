@@ -1,23 +1,23 @@
 import { PrayerTimes } from '../../../domain/prayer/PrayerTimes';
 import { Language } from '../../../domain/shared/Language';
-import { TranslationService } from '../../../infrastructure/i18n/TranslationService';
+import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 
 /**
  * Prayer Times Formatter
  * Formats prayer times for display in Telegram
  */
 export class PrayerTimesFormatter {
-  constructor(private readonly translationService: TranslationService) {}
+  constructor(private readonly translationService: GrpcTranslationService) {}
 
-  formatForMessage(prayerTimes: PrayerTimes, language: Language): string {
-    const title = this.translationService.translate('prayer-times-title', language);
+  async formatForMessage(prayerTimes: PrayerTimes, language: Language): Promise<string> {
+    const title = await this.translationService.translate('prayer-times-title', language);
     const nextPrayer = prayerTimes.getNextPrayer();
 
     let message = `📿 *${title}* 📿\n\n`;
 
     for (const prayerTime of prayerTimes.getAllPrayerTimes()) {
       const prayerNameKey = prayerTime.name.toLowerCase() as any;
-      const translatedName = this.translationService.translate(prayerNameKey, language);
+      const translatedName = await this.translationService.translate(prayerNameKey, language);
       const isNext = nextPrayer && nextPrayer.name === prayerTime.name;
 
       message += isNext
@@ -26,8 +26,8 @@ export class PrayerTimesFormatter {
     }
 
     if (nextPrayer) {
-      const nextPrayerText = this.translationService.translate('next-prayer', language);
-      const nextPrayerName = this.translationService.translate(
+      const nextPrayerText = await this.translationService.translate('next-prayer', language);
+      const nextPrayerName = await this.translationService.translate(
         nextPrayer.name.toLowerCase() as any,
         language
       );
