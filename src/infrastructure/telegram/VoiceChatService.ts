@@ -1,50 +1,59 @@
-import { TelegramClient } from 'telegram';
-import { StringSession } from 'telegram/sessions';
-import { Api } from 'telegram/tl';
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import * as path from 'path';
 
 /**
  * Voice Chat Service
- * Handles Telegram voice chat streaming using MTProto (GramJS)
+ * Handles Telegram voice chat streaming via Python Pyrogram microservice
  *
- * Note: Voice chat streaming requires:
- * 1. API_ID and API_HASH from https://my.telegram.org
- * 2. User session (phone number authentication)
- * 3. Bot must be admin in the group with "Manage Voice Chats" permission
+ * This service communicates with a Python microservice that uses Pyrogram and pytgcalls
+ * to stream audio to Telegram voice chats.
+ *
+ * Note: The Python service must be running and accessible via gRPC
  */
 export class VoiceChatService {
-  private client: TelegramClient | null = null;
-  private activeVoiceChats: Map<number, any> = new Map();
+  private client: any = null;
+  private serviceUrl: string;
+  private isConnected: boolean = false;
 
-  constructor(
-    private readonly apiId?: number,
-    private readonly apiHash?: string,
-    private readonly sessionString?: string
-  ) {}
+  constructor(serviceUrl: string = 'localhost:50053') {
+    this.serviceUrl = serviceUrl;
+  }
 
   /**
-   * Initialize the MTProto client for voice chat operations
+   * Initialize the gRPC client connection to Python voice chat service
    */
   async initialize(): Promise<void> {
-    if (!this.apiId || !this.apiHash) {
-      console.warn('⚠️  Voice chat streaming disabled: API_ID and API_HASH not configured');
-      console.warn('   To enable voice chat streaming:');
-      console.warn('   1. Get API_ID and API_HASH from https://my.telegram.org');
-      console.warn('   2. Add them to your .env file');
-      console.warn('   3. Run authentication to get session string');
-      return;
-    }
-
     try {
-      const session = new StringSession(this.sessionString || '');
-      this.client = new TelegramClient(session, this.apiId, this.apiHash, {
-        connectionRetries: 5,
+      // Load proto file
+      const PROTO_PATH = path.join(__dirname, '../../../proto/voice-chat.proto');
+      const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        defaults: true,
+        oneofs: true,
       });
 
-      await this.client.connect();
-      console.log('✅ Voice chat service initialized successfully!');
+      const voiceChatProto = grpc.loadPackageDefinition(packageDefinition).voicechat as any;
+
+      // Create gRPC client
+      this.client = new voiceChatProto.VoiceChatService(
+        this.serviceUrl,
+        grpc.credentials.createInsecure()
+      );
+
+      // Test connection with health check
+      await this.healthCheck();
+      this.isConnected = true;
+
+      console.log('✅ Voice chat service connected successfully!');
     } catch (error) {
       console.error('Failed to initialize voice chat service:', error);
+      console.warn('⚠️  Voice chat streaming disabled - Python service not available');
+      console.warn(`   Make sure the voice-chat-service is running at ${this.serviceUrl}`);
       this.client = null;
+      this.isConnected = false;
     }
   }
 
@@ -52,7 +61,27 @@ export class VoiceChatService {
    * Check if voice chat service is available
    */
   isAvailable(): boolean {
-    return this.client !== null && (this.client.connected === true);
+    return this.client !== null && this.isConnected;
+  }
+
+  /**
+   * Health check to verify connection to Python service
+   */
+  private async healthCheck(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (!this.client) {
+        reject(new Error('Client not initialized'));
+        return;
+      }
+
+      this.client.HealthCheck({}, (error: any, response: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response.healthy);
+        }
+      });
+    });
   }
 
   /**
@@ -64,86 +93,71 @@ export class VoiceChatService {
       return false;
     }
 
-    try {
-      // Create a group call
-      const result = await this.client!.invoke(
-        new Api.phone.CreateGroupCall({
-          peer: chatId,
-          randomId: Math.floor(Math.random() * 1000000),
-        })
-      );
-
-      this.activeVoiceChats.set(chatId, result);
-      console.log(`✅ Started voice chat in group ${chatId}`);
-      return true;
-    } catch (error) {
-      console.error(`Failed to start voice chat in group ${chatId}:`, error);
-      return false;
-    }
+    return new Promise((resolve) => {
+      this.client.StartVoiceChat({ chat_id: chatId }, (error: any, response: any) => {
+        if (error) {
+          console.error(`Failed to start voice chat in group ${chatId}:`, error.message);
+          resolve(false);
+        } else {
+          console.log(`✅ ${response.message}`);
+          resolve(response.success);
+        }
+      });
+    });
   }
 
   /**
    * Stream audio to a voice chat
    *
    * @param chatId - The chat ID where voice chat is active
-   * @param audioPath - Path to the audio file to stream (local file or URL)
+   * @param audioUrl - URL to the audio file to stream
    */
-  async streamAudio(chatId: number, audioPath: string): Promise<boolean> {
+  async streamAudio(chatId: number, audioUrl: string): Promise<boolean> {
     if (!this.isAvailable()) {
       console.warn(`Cannot stream audio: voice chat not available for chat ${chatId}`);
       return false;
     }
 
-    if (!this.activeVoiceChats.has(chatId)) {
-      // Try to start voice chat first
-      const started = await this.startVoiceChat(chatId);
-      if (!started) {
-        return false;
-      }
-    }
+    return new Promise((resolve) => {
+      console.log(`🎵 Streaming audio to chat ${chatId} from ${audioUrl}`);
 
-    try {
-      // Note: Actual audio streaming requires additional native libraries (tgcalls, wrtc)
-      // This is a placeholder for the streaming logic
-      console.log(`🎵 Would stream audio from ${audioPath} to chat ${chatId}`);
-      console.warn('⚠️  Audio streaming implementation requires native dependencies');
-      console.warn('   Install: npm install @tgcalls/node (requires system dependencies)');
-
-      // TODO: Implement actual audio streaming when native dependencies are available
-      // This would involve:
-      // 1. Joining the group call
-      // 2. Creating an audio stream from the file
-      // 3. Piping the stream to the group call
-      // 4. Handling playback completion
-
-      return false;
-    } catch (error) {
-      console.error(`Failed to stream audio to chat ${chatId}:`, error);
-      return false;
-    }
+      this.client.StreamAzan(
+        { chat_id: chatId, audio_url: audioUrl },
+        (error: any, response: any) => {
+          if (error) {
+            console.error(`Failed to stream audio to chat ${chatId}:`, error.message);
+            resolve(false);
+          } else {
+            if (response.success) {
+              console.log(`✅ ${response.message}`);
+            } else {
+              console.warn(`⚠️  ${response.message}`);
+            }
+            resolve(response.success);
+          }
+        }
+      );
+    });
   }
 
   /**
    * Stop voice chat in a group
    */
   async stopVoiceChat(chatId: number): Promise<void> {
-    if (!this.isAvailable() || !this.activeVoiceChats.has(chatId)) {
+    if (!this.isAvailable()) {
       return;
     }
 
-    try {
-      const call = this.activeVoiceChats.get(chatId);
-      await this.client!.invoke(
-        new Api.phone.DiscardGroupCall({
-          call: call,
-        })
-      );
-
-      this.activeVoiceChats.delete(chatId);
-      console.log(`✅ Stopped voice chat in group ${chatId}`);
-    } catch (error) {
-      console.error(`Failed to stop voice chat in group ${chatId}:`, error);
-    }
+    return new Promise((resolve) => {
+      this.client.StopVoiceChat({ chat_id: chatId }, (error: any, response: any) => {
+        if (error) {
+          console.error(`Failed to stop voice chat in group ${chatId}:`, error.message);
+        } else {
+          console.log(`✅ ${response.message}`);
+        }
+        resolve();
+      });
+    });
   }
 
   /**
@@ -151,13 +165,9 @@ export class VoiceChatService {
    */
   async disconnect(): Promise<void> {
     if (this.client) {
-      // Stop all active voice chats
-      for (const chatId of this.activeVoiceChats.keys()) {
-        await this.stopVoiceChat(chatId);
-      }
-
-      await this.client.disconnect();
+      // gRPC client doesn't need explicit disconnection
       this.client = null;
+      this.isConnected = false;
       console.log('✅ Voice chat service disconnected');
     }
   }

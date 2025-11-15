@@ -136,22 +136,18 @@ function bootstrap(): void {
   // Register reminder services after bot is created
   console.log('> Setting up reminder system...');
 
-  // Register VoiceChatService (optional - only if configured)
+  // Register VoiceChatService (connects to Python Pyrogram microservice)
   const voiceChatService = new VoiceChatService(
-    settings.API_ID,
-    settings.API_HASH,
-    settings.SESSION_STRING
+    settings.VOICE_CHAT_SERVICE_URL
   );
 
   container.register(TOKENS.VoiceChatService, () => voiceChatService, 'singleton');
 
-  // Initialize voice chat service if configured
-  if (settings.API_ID && settings.API_HASH) {
-    console.log('> Initializing voice chat service...');
-    voiceChatService.initialize().catch((error) => {
-      console.error('Failed to initialize voice chat service:', error);
-    });
-  }
+  // Initialize voice chat service
+  console.log('> Initializing voice chat service...');
+  voiceChatService.initialize().catch((error) => {
+    console.warn('Voice chat service not available, falling back to voice messages');
+  });
 
   container.register(
     TOKENS.NotificationService,
