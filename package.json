@@ -7,7 +7,9 @@
     "start": "ts-node src/index.ts",
     "dev": "ts-node src/index.ts --watch",
     "build": "tsc",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "webapp": "cd src/apps/salah-times && npm run dev",
+    "start:all": "concurrently \"npm run start\" \"npm run webapp\" --names \"bot,webapp\" --prefix-colors \"cyan,magenta\""
   },
   "author": "AbdulQader Qassab",
   "license": "ISC",
@@ -18,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
+    "concurrently": "^8.2.2",
     "ts-dotenv": "^0.9.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
