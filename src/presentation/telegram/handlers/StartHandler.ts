@@ -5,22 +5,34 @@ import { UpdateUserLocationUseCase } from '../../../application/user/UpdateUserL
 import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
 import { Language } from '../../../domain/shared/Language';
 import { User } from '../../../domain/user/User';
+import { Handler, Command, Action } from '../../../core/di/decorators';
+import { TOKENS } from '../../../core/di/tokens';
+import { BaseHandler } from '../../../core/handlers/BaseHandler';
 
 /**
  * Start Command Handler
  * Handles the /start command and the complete onboarding flow
  */
-export class StartHandler {
+@Handler(
+  TOKENS.RegisterUserUseCase,
+  TOKENS.UpdateUserLocationUseCase,
+  TOKENS.TranslationService,
+  TOKENS.SessionManager
+)
+export class StartHandler extends BaseHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly updateUserLocationUseCase: UpdateUserLocationUseCase,
     private readonly translationService: GrpcTranslationService,
     private readonly sessionManager: SessionManager
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Handles the /start command
    */
+  @Command('start')
   async handleStart(ctx: BotContext): Promise<void> {
     const userId = ctx.from?.id;
     if (!userId) return;
@@ -65,6 +77,7 @@ export class StartHandler {
   /**
    * Handles language selection callback
    */
+  @Action(/^lang_(.+)$/)
   async handleLanguageSelection(ctx: BotContext): Promise<void> {
     const userId = ctx.from?.id;
     if (!userId || !ctx.match) return;
@@ -189,9 +202,18 @@ export class StartHandler {
   /**
    * Handles functionality selection callback
    */
-  async handleFunctionalitySelection(ctx: BotContext, user: User): Promise<void> {
+  @Action(/^func_(.+)$/)
+  async handleFunctionalitySelection(ctx: BotContext): Promise<void> {
     const userId = ctx.from?.id;
     if (!userId || !ctx.match) return;
+
+    // Get user
+    const user = await this.registerUserUseCase.execute({
+      userId,
+      username: ctx.from?.username || null,
+      displayName: ctx.from?.first_name || 'User',
+      languageCode: ctx.from?.language_code,
+    });
 
     const functionality = ctx.match[1];
 

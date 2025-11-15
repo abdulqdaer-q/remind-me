@@ -1,17 +1,27 @@
 import { Context, Markup } from 'telegraf';
 import { RegisterUserUseCase } from '../../../application/user/RegisterUserUseCase';
 import { GrpcTranslationService } from '../../../infrastructure/i18n/GrpcTranslationService';
+import { Handler, Command } from '../../../core/di/decorators';
+import { TOKENS } from '../../../core/di/tokens';
+import { BaseHandler } from '../../../core/handlers/BaseHandler';
 
 /**
  * Subscribe Command Handler
  * Handles the /subscribe command to request user location
  */
-export class SubscribeHandler {
+@Handler(
+  TOKENS.RegisterUserUseCase,
+  TOKENS.TranslationService
+)
+export class SubscribeHandler extends BaseHandler {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly translationService: GrpcTranslationService
-  ) {}
+  ) {
+    super();
+  }
 
+  @Command('subscribe')
   async handle(ctx: Context): Promise<void> {
     if (!ctx.from) {
       await ctx.reply('Unable to identify user.');
