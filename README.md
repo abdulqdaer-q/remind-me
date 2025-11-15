@@ -84,7 +84,7 @@ npm install
 npm run services:install
 
 # Install web app dependencies
-cd src/apps/salah-times && npm install
+cd webapp && npm install
 ```
 
 2. **Set up environment variables**

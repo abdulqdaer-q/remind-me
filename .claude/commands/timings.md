@@ -10,7 +10,7 @@ Run the following commands:
 3. Open the browser to the webapp URL
 
 ```bash
-cd src/apps/salah-times && npm run dev &
+cd webapp && npm run dev &
 sleep 3
 xdg-open http://localhost:5173 || open http://localhost:5173 || echo "Please open http://localhost:5173 in your browser"
 ```
