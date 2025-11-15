@@ -88,7 +88,7 @@ export class LocationHandler extends BaseHandler {
     // Update session
     const chatId = ctx.chat?.id;
     if (chatId) {
-      this.sessionManager.updateSession(chatId, {
+      await this.sessionManager.updateSession(chatId, {
         tempData: {
           ...ctx.session?.tempData,
           location: {

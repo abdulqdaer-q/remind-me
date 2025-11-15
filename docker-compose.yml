@@ -45,6 +45,24 @@ services:
       retries: 3
       start_period: 40s
 
+  # Redis Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: remind-me-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - remind-me-network
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   # Telegram Bot
   bot:
     build:
@@ -56,9 +74,11 @@ services:
       - WEB_APP_URL=${WEB_APP_URL:-http://localhost:8080}
       - TRANSLATION_SERVICE_URL=translation-service:50051
       - PRAYER_TIMES_SERVICE_URL=prayer-times-service:50052
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     depends_on:
       - translation-service
       - prayer-times-service
+      - redis
     networks:
       - remind-me-network
     restart: unless-stopped
@@ -86,3 +106,7 @@ services:
 networks:
   remind-me-network:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
