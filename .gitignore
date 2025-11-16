@@ -7,3 +7,5 @@ src/db.json
 *.js.map
 !jest.config.js
 !.eslintrc.js
+services/voice-chat-service/venv
+services/voice-chat-service/src/__pycache__

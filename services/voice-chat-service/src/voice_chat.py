@@ -11,6 +11,9 @@ from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioPiped, StreamAudioEnded
 from pytgcalls.exceptions import NoActiveGroupCall, AlreadyJoinedError
 import aiohttp
+import random
+import math
+import pyrogram.raw
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +56,8 @@ class VoiceChatManager:
                 except Exception as e:
                     logger.warning(f"Failed to remove temp file {temp_file}: {e}")
 
-            await self.pytgcalls.stop()
-            logger.info("PyTgCalls client stopped")
+            # PyTgCalls 0.9.7 doesn't have a stop method, just disconnect from all calls
+            logger.info("PyTgCalls cleanup completed")
         except Exception as e:
             logger.error(f"Error stopping PyTgCalls: {e}")
 
@@ -98,7 +101,7 @@ class VoiceChatManager:
 
             # Join voice chat and stream
             try:
-                await self.pytgcalls.play(
+                await self.pytgcalls.join_group_call(
                     chat_id,
                     audio_stream
                 )
@@ -115,34 +118,35 @@ class VoiceChatManager:
                 await self.stop_voice_chat(chat_id)
                 await asyncio.sleep(1)
                 # Retry
-                await self.pytgcalls.play(chat_id, audio_stream)
+                await self.pytgcalls.join_group_call(chat_id, audio_stream)
                 self.active_calls[chat_id] = True
                 logger.info(f"Successfully started streaming in chat {chat_id} (retry)")
                 await self._wait_for_stream_end(chat_id)
                 return True
 
             except NoActiveGroupCall:
-                logger.error(f"No active voice chat in {chat_id}")
-                # Try to start voice chat first
-                try:
-                    # Use the bot to start a voice chat
-                    await self.client.invoke(
-                        pyrogram.raw.functions.phone.CreateGroupCall(
-                            peer=await self.client.resolve_peer(chat_id),
-                            random_id=self.client.rnd_id()
-                        )
-                    )
-                    logger.info(f"Started voice chat in {chat_id}")
-                    await asyncio.sleep(2)
+                logger.warning(f"No active voice chat in {chat_id}, attempting to start one...")
+                # Try to start a video chat first
+                if await self.start_voice_chat(chat_id):
+                    logger.info(f"Started video chat in {chat_id}, retrying stream...")
+                    await asyncio.sleep(2)  # Give it time to initialize
 
-                    # Retry streaming
-                    await self.pytgcalls.play(chat_id, audio_stream)
-                    self.active_calls[chat_id] = True
-                    logger.info(f"Successfully started streaming in chat {chat_id} (after creating call)")
-                    await self._wait_for_stream_end(chat_id)
-                    return True
-                except Exception as e:
-                    logger.error(f"Failed to create voice chat: {e}")
+                    # Retry joining and streaming
+                    try:
+                        await self.pytgcalls.join_group_call(
+                            chat_id,
+                            audio_stream
+                        )
+                        self.active_calls[chat_id] = True
+                        logger.info(f"Successfully started streaming in chat {chat_id} (after creating video chat)")
+                        await self._wait_for_stream_end(chat_id)
+                        return True
+                    except Exception as retry_error:
+                        logger.error(f"Failed to join after creating video chat: {retry_error}")
+                        return False
+                else:
+                    logger.error(f"Could not start video chat in {chat_id}")
+                    logger.info("Bot may not have permission to start video chats. Please ensure bot is admin with 'Manage Video Chats' permission")
                     return False
 
         except Exception as e:
@@ -200,15 +204,13 @@ class VoiceChatManager:
             return False
 
     async def start_voice_chat(self, chat_id: int) -> bool:
-        """Start a voice chat in a group."""
+        """Start a video chat (group call) in a group."""
         try:
-            import pyrogram.raw
-
             # Create a group call
             await self.client.invoke(
                 pyrogram.raw.functions.phone.CreateGroupCall(
                     peer=await self.client.resolve_peer(chat_id),
-                    random_id=self.client.rnd_id()
+                    random_id= math.ceil(random.random()*1e8)
                 )
             )
             logger.info(f"Created voice chat in {chat_id}")

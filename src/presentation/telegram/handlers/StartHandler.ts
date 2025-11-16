@@ -122,34 +122,53 @@ export class StartHandler extends BaseHandler {
       languageCode,
     });
 
-    // Update session
-    if (chatId) {
-      this.sessionManager.updateSession(chatId, {
-        tempData: { language: languageCode },
-        conversationState: 'AWAITING_LOCATION',
-      });
-    }
-
     // Acknowledge language selection
     await ctx.answerCbQuery();
     await ctx.editMessageText(
       await this.translationService.translate('language-selected', language)
     );
 
-    // Request location
+    // Update session
+    if (chatId) {
+      this.sessionManager.updateSession(chatId, {
+        tempData: {
+          language: languageCode,
+          setupInitiatorId: isGroup ? userId : undefined  // Track who started setup in groups
+        },
+        conversationState: 'AWAITING_LOCATION',
+      });
+    }
+
+    // Request location (different approach for groups vs private)
     const locationText = await this.translationService.translate(
       'request-location',
       language
     );
-    const buttonText = await this.translationService.translate(
-      'button-send-location',
-      language
-    );
 
-    await ctx.reply(
-      locationText,
-      Markup.keyboard([[Markup.button.locationRequest(buttonText)]]).resize()
-    );
+    if (isGroup) {
+      // For groups, ask to share location directly in the group
+      // (Users can attach location via the attachment menu in groups)
+      const groupLocationText = await this.translationService.translate(
+        'request-location-group',
+        language
+      );
+
+      await ctx.reply(
+        groupLocationText || `${locationText}\n\n📍 Please tap the 📎 attachment button and share your location in this group.`,
+        Markup.removeKeyboard()
+      );
+    } else {
+      // Private chat - use location request button
+      const buttonText = await this.translationService.translate(
+        'button-send-location',
+        language
+      );
+
+      await ctx.reply(
+        locationText,
+        Markup.keyboard([[Markup.button.locationRequest(buttonText)]]).resize()
+      );
+    }
   }
 
   /**
@@ -174,7 +193,21 @@ export class StartHandler extends BaseHandler {
     const isGroup = ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
     const entityId = isGroup ? chatId : userId;
 
-    // Save location to user/group
+    // For groups, verify that the person sharing location is the one who initiated setup
+    if (isGroup) {
+      const setupInitiatorId = ctx.session?.tempData?.setupInitiatorId;
+      if (setupInitiatorId && setupInitiatorId !== userId) {
+        // Someone else is trying to share location - ignore it
+        const wrongUserText = await this.translationService.translate(
+          'location-wrong-user',
+          user.language
+        );
+        await ctx.reply(wrongUserText || 'Only the person who started setup can share location.');
+        return;
+      }
+    }
+
+    // Save location to user/group (for groups, this is the location of the setup initiator)
     await this.updateUserLocationUseCase.execute({
       userId: entityId,
       latitude: location.latitude,

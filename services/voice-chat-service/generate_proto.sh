@@ -2,14 +2,17 @@
 
 # Generate Python gRPC code from proto files
 
-# Create generated directory
-mkdir -p generated
+# Activate virtual environment
+source venv/bin/activate
 
-# Generate Python code
+# Create src directory if it doesn't exist
+mkdir -p src
+
+# Generate Python code directly to src
 python -m grpc_tools.protoc \
     -I../../proto \
-    --python_out=./generated \
-    --grpc_python_out=./generated \
+    --python_out=./src \
+    --grpc_python_out=./src \
     ../../proto/voice-chat.proto
 
 echo "Proto files generated successfully!"

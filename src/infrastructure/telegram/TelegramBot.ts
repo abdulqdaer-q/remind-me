@@ -19,7 +19,6 @@ export class TelegramBot {
     this.bot = new Telegraf<BotContext>(botToken);
     this.handlerRegistry = new HandlerRegistry(this.bot, this.container);
     this.setupMiddleware();
-    this.setupHandlers();
   }
 
   private setupMiddleware(): void {
@@ -27,7 +26,7 @@ export class TelegramBot {
     this.bot.use(this.sessionManager.createMiddleware());
   }
 
-  private setupHandlers(): void {
+  setupHandlers(): void {
     // Automatically register all decorated handlers
     this.handlerRegistry.registerAll();
 

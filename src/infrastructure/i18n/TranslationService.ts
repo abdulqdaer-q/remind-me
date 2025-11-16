@@ -24,7 +24,8 @@ export interface Translations {
   'setup-complete-with-selections': string;
   'button-send-location': string;
   'button-skip': string;
-
+  'location-wrong-user': string;
+  'request-location-group': string;
   // Prayer names
   fajr: string;
   sunrise: string;
@@ -64,7 +65,8 @@ const translations: Record<string, Translations> = {
       '✅ Setup complete! Your selected features have been activated.',
     'button-send-location': '📍 Send Location',
     'button-skip': 'Skip',
-
+    'location-wrong-user': 'Location is not for this user',
+    'request-location-group': 'Please share your location using the attachment button below:',
     // Prayer names
     fajr: 'Fajr',
     sunrise: 'Sunrise',
@@ -100,7 +102,8 @@ const translations: Record<string, Translations> = {
     'setup-complete-with-selections': '✅ اكتمل الإعداد! تم تفعيل الميزات المختارة.',
     'button-send-location': '📍 إرسال الموقع',
     'button-skip': 'تخطي',
-
+    'location-wrong-user': 'الموقع غير مرتبط بمستخدم',
+    'request-location-group': 'Please share your location using the attachment button below:',
     // Prayer names
     fajr: 'الفجر',
     sunrise: 'الشروق',

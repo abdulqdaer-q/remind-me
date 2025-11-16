@@ -16,6 +16,7 @@ export interface SessionData {
       latitude: number;
       longitude: number;
     };
+    setupInitiatorId?: number;
   };
 }
 

@@ -43,10 +43,15 @@ export class VoiceChatService {
         grpc.credentials.createInsecure()
       );
 
+      console.log('✅ Voice chat service initialized successfully!');
       // Test connection with health check
       await this.healthCheck();
       this.isConnected = true;
-
+      console.log({
+        qassab: 'qassab',
+        isConnected: this.isConnected,
+        healthCheck: await this.healthCheck(),
+      });
       console.log('✅ Voice chat service connected successfully!');
     } catch (error) {
       console.error('Failed to initialize voice chat service:', error);
@@ -54,6 +59,7 @@ export class VoiceChatService {
       console.warn(`   Make sure the voice-chat-service is running at ${this.serviceUrl}`);
       this.client = null;
       this.isConnected = false;
+      throw error;
     }
   }
 
@@ -113,8 +119,9 @@ export class VoiceChatService {
    * @param audioUrl - URL to the audio file to stream
    */
   async streamAudio(chatId: number, audioUrl: string): Promise<boolean> {
+    console.log(`🎵 Streaming audio to chat ${chatId} from ${audioUrl} | ${this.isAvailable()}` );
     if (!this.isAvailable()) {
-      console.warn(`Cannot stream audio: voice chat not available for chat ${chatId}`);
+      console.warn(`Voice chat not available for streaming to chat ${chatId}`);
       return false;
     }
 

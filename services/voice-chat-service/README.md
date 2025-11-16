@@ -191,6 +191,17 @@ The service tries to create a voice chat automatically. If this fails, manually 
 - Check network connectivity to Telegram servers
 - Ensure gRPC port 50053 is not blocked
 
+### "Session string is corrupted or incompatible" error
+
+If you see `struct.error: unpack requires a buffer of 271 bytes`, the session string was generated with an older version of Pyrogram and needs to be regenerated:
+
+```bash
+cd services/voice-chat-service
+python generate_session.py
+```
+
+Copy the new SESSION_STRING to your `.env` file and restart the service
+
 ### "Two bot instances" error
 
 If you see conflicts:

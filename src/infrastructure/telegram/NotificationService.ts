@@ -77,17 +77,26 @@ export class NotificationService {
     caption?: string
   ): Promise<'voice_chat' | 'voice_message' | 'failed'> {
     // Try voice chat streaming first (if service is available)
-    if (this.voiceChatService?.isAvailable()) {
+      if (!this.voiceChatService) {
+        console.error('Voice chat service not initialized');
+        return 'failed';
+      }
+      
       console.log(`🎵 Attempting to broadcast azan via voice chat in ${chatId}`);
       const streamed = await this.voiceChatService.streamAudio(chatId, azanAudioPath);
 
+      console.log({
+        streamed,
+        chatId,
+        azanAudioPath,
+        caption,
+      })
       if (streamed) {
         console.log(`✅ Successfully broadcasted azan via voice chat in ${chatId}`);
         return 'voice_chat';
       }
 
       console.log(`⚠️  Voice chat streaming failed, falling back to voice message`);
-    }
 
     // Fallback to voice message
     try {

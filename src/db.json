@@ -8,12 +8,40 @@
       "isSubscribed": false
     },
     "location": {
-      "latitude": 25.328897,
-      "longitude": 55.371161
+      "latitude": 25.333311,
+      "longitude": 55.378462
     },
     "functionalities": {
       "reminder": true,
       "tracker": false,
+      "remindByCall": false
+    }
+  },
+  "-1003478476639": {
+    "username": null,
+    "displayName": "17cm",
+    "isActive": true,
+    "preferences": {
+      "language": "en",
+      "isSubscribed": false
+    },
+    "functionalities": {
+      "reminder": true,
+      "tracker": false,
+      "remindByCall": false
+    }
+  },
+  "-1003361824863": {
+    "username": null,
+    "displayName": "test=azan",
+    "isActive": true,
+    "preferences": {
+      "language": "en",
+      "isSubscribed": false
+    },
+    "functionalities": {
+      "reminder": true,
+      "tracker": true,
       "remindByCall": false
     }
   }

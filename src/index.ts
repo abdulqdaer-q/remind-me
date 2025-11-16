@@ -143,10 +143,28 @@ function bootstrap(): void {
 
   container.register(TOKENS.VoiceChatService, () => voiceChatService, 'singleton');
 
-  // Initialize voice chat service
+  // Initialize voice chat service with retry
   console.log('> Initializing voice chat service...');
-  voiceChatService.initialize().catch((error) => {
-    console.warn('Voice chat service not available, falling back to voice messages');
+  const initializeVoiceChatWithRetry = async (maxRetries = 10, delayMs = 3000) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await voiceChatService.initialize();
+        console.log('✅ Voice chat service connected!');
+        return;
+      } catch (error) {
+        if (i < maxRetries - 1) {
+          console.log(`⏳ Voice chat service not ready, retrying in ${delayMs/1000}s... (${i + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        } else {
+          console.warn('⚠️  Voice chat service not available after retries, falling back to voice messages');
+        }
+      }
+    }
+  };
+
+  // Start retry in background, don't block bot startup
+  initializeVoiceChatWithRetry().catch(() => {
+    console.warn('Voice chat service initialization failed');
   });
 
   container.register(
@@ -166,6 +184,9 @@ function bootstrap(): void {
       ),
     'singleton'
   );
+
+  console.log('> Setting up bot handlers...');
+  bot.setupHandlers();
 
   console.log('> Launching bot...');
   bot.launch();

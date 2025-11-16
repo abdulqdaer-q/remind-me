@@ -48,8 +48,8 @@ services:
   # Voice Chat Service (Python Pyrogram for azan broadcasting)
   voice-chat-service:
     build:
-      context: ./services/voice-chat-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/voice-chat-service/Dockerfile
     container_name: voice-chat-service
     ports:
       - "50053:50053"  # gRPC

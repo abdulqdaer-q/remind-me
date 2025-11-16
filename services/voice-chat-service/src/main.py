@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import struct
 import sys
 from dotenv import load_dotenv
 from pyrogram import Client
@@ -13,7 +14,7 @@ from grpc_server import serve
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
     ]
@@ -53,14 +54,22 @@ async def main():
         session_string=session_string,
         workdir="/tmp"
     )
-
+    logger.info(f"app_id: {api_id}")
+    logger.info(f"app_hash: {api_hash}")
+    logger.info(f"session_string: {session_string}")
     # Initialize voice chat manager
     voice_chat_manager = VoiceChatManager(app)
 
     try:
         # Start Pyrogram client
         logger.info("Starting Pyrogram client...")
-        await app.start()
+        try:
+            await app.start()
+        except struct.error as e:
+            logger.error("Session string is corrupted or incompatible with current Pyrogram version")
+            logger.error("Please regenerate the session string by running:")
+            logger.error("  cd services/voice-chat-service && python generate_session.py")
+            sys.exit(1)
         logger.info("Pyrogram client started")
 
         # Start PyTgCalls

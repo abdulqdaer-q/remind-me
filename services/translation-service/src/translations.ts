@@ -26,6 +26,7 @@ export interface Translations {
   'prayer': string;
   'time': string;
   'title_in': string;
+  'location-wrong-user': string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -54,7 +55,8 @@ const translations: Record<Language, Translations> = {
     'time-remaining': 'Time Remaining',
     'prayer': 'Prayer',
     'time': 'Time',
-    'title_in': 'Prayer Times in'
+    'title_in': 'Prayer Times in',
+    'location-wrong-user': 'Location is not for this user',
   },
   ar: {
     'welcome-message': 'مرحباً! يمكنني مساعدتك في تتبع أوقات الصلاة وإرسال التذكيرات.',
@@ -81,7 +83,8 @@ const translations: Record<Language, Translations> = {
     'time-remaining': 'الوقت المتبقي',
     'prayer': 'الصلاة',
     'time': 'الوقت',
-    'title_in': 'أوقات الصلاة في'
+    'title_in': 'أوقات الصلاة في',
+    'location-wrong-user': 'الموقع غير مرتبط بمستخدم'
   }
 };
 
